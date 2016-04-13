@@ -11,6 +11,13 @@
 #include "threads/synch.h"
 #include "threads/vaddr.h"
 
+/*custom variable */
+//frame_table is a list of all frames that have been assigned a page.
+//the page assignment has been cataloged within the "frame" struct
+struct list frame_table;
+//lock used to access the frame_table from the thread
+struct lock frame_table_access;
+
 /* Page allocator.  Hands out memory in page-size (or
    page-multiple) chunks.  See malloc.h for an allocator that
    hands out smaller chunks.
@@ -61,6 +68,42 @@ palloc_init (size_t user_page_limit)
              user_pages, "user pool");
 }
 
+/* custom function
+* this function is used to map a frame to a page
+* accepts the page that needs to be mapped to this frame
+*/
+
+void* add_to_frame_table(void* pages, size_t page_cnt) {
+
+  if (page_cnt != 1) {
+    //then do not try to assing multiple pages to a single frame
+    printf("frame_table: page assignment not 1:1");
+    return NULL;
+  }
+
+  struct frame curr_frame;
+
+  //assing the frame struct to the currently running thread
+  curr_frame.owner_thread = thread_current();
+  curr_frame.page_mapping = pages;
+
+  //move "pages" by "PHYS_BASE" to obtain the desired place in physical memory
+  void* frame_ptr = PHYS_BASE - pages;
+
+  //set the ptr to point to "curr_frame" by type cast
+  frame_ptr = (struct frame*)&curr_frame;
+
+  //synchronize threads with the global "frame_table"
+  lock_try_acquire(&frame_table_access);
+  list_push_back(&frame_table, &curr_frame.elem);
+  lock_release(&frame_table_access);
+
+  return frame_ptr;
+  return NULL;
+}
+
+/*end custom function */
+
 /* Obtains and returns a group of PAGE_CNT contiguous free pages.
    If PAL_USER is set, the pages are obtained from the user pool,
    otherwise from the kernel pool.  If PAL_ZERO is set in FLAGS,
@@ -96,6 +139,9 @@ palloc_get_multiple (enum palloc_flags flags, size_t page_cnt)
       if (flags & PAL_ASSERT)
         PANIC ("palloc_get: out of pages");
     }
+
+  //ADDED: "add_to_frame_table" function
+  add_to_frame_table(pages, page_cnt);
 
   return pages;
 }
