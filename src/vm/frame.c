@@ -46,7 +46,7 @@ void add_to_frame_table(void* pages, size_t page_cnt) {
 	    lock_release(&frame_table_access);
 	    //set the value of e to the "new" frame struct (same thread owner but different page_mapping)
 	    *e = frame_in_table->elem;
-	    return 1;
+	    return;
 	  }
 	}
 

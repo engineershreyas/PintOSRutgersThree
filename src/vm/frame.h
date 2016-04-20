@@ -2,8 +2,8 @@
 #define VM_FRAME_H
 
 #include <stddef.h>
-#include "thread.h"
-#include "list.h"
+#include "threads/thread.h"
+#include "lib/kernel/list.h"
 
 /*custom structures */
 // because we give each frame a page variable to be mapped to, we can just store the frame onto an list
