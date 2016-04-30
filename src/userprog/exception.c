@@ -195,9 +195,6 @@ page_fault (struct intr_frame *f)
 
     lock_release(&spage_table_access);
 
-    //the data that goes into the spage table should be a physical address. this address points to the file on the filesys or swap space or all 0
-
-    // lock_release(&spage_table_access);
   }
 
 
@@ -207,5 +204,6 @@ page_fault (struct intr_frame *f)
           not_present ? "not present" : "rights violation",
           write ? "writing" : "reading",
           user ? "user" : "kernel");
-  kill (f);
+  
+  //kill (f);
 }
