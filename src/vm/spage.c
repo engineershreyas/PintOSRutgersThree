@@ -1,24 +1,59 @@
 #include "init.h"
 #include "userprog/pagedir.h"
 #include "lib/kernel/list.h"
-#include "lib/kernel/hash.h"
 #include "vm/frame.h"
+#include "filesys/file.h"
+#include "vm/spage.h"
 
+/*REMEMBER:
+the page table pointer points to the physical addresses
+*/
 
-struct spage_table spt; //maps to virtual pages one-to-one. has a pointer to the corresponding page table
+struct list visited_pages;
+//struct spage_table add_supp; //maps to virtual pages one-to-one. has a pointer to the corresponding page table
 struct lock spage_table_access;
 
 void spage_table_init(void) {
-	spt.pt_ptr = &init_page_dir; //set the page table pointer to the pintos page table
+	list_init(&visited_pages);
 	lock_init(&spage_table_access);
 }
 
-void add_to_spage_table(void) {
+void set_on_pte(void) { //sets a spage table's parameters based on the page table entry 
 	//init_page_dir in  the init.h file is used as the main page table
-}
-
-void search_page_table(void* fault_addr, size_t page_fault_cnt) {
-	//"fault_addr" is the address in which the page fault occured in virtual memory
-
 	
+	lock_acquire(& spage_table_access);
+	//check if pte exists on the visited pages list, if not then add it
+	struct list_elem* e;
+	for(e = list_begin(&visited_pages); e != list_end(&visited_pages); e = list_next(e)) {
+		struct spage *sp = list_entry(e, struct spage, elem);
+		if (sp->pt_ptr == init_page_dir) {
+			break;
+		}
+	}
+
+	struct spage add_supp;
+	add_supp.pt_ptr = init_page_dir;
+
+	if (*add_supp.pt_ptr <= PHYS_BASE) {
+		add_supp.valid_access = 1;
+	} else {
+		add_supp.valid_access = 0;
+		lock_release(&spage_table_access);
+		return;
+	}
+
+	//check if data is availible at this location
+	if (*add_supp.pt_ptr == NULL) {
+		add_supp.valid_access = 0;
+		lock_release(&spage_table_access);
+		return;
+	}
+
+	bit1 = 0x02; //bit 2 of the page table entry states if the address is writable;
+
+	//checks if bit 2 of the page table entry is set
+	*add_supp.pt_ptr & bit1 ? stp.read_only = 0 : add_supp.read_only = 1;
+	lock_release(&spage_table_access);
+
+	return;
 }
