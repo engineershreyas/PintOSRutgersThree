@@ -1,9 +1,17 @@
+
 #include "userprog/exception.h"
 #include <inttypes.h>
 #include <stdio.h>
 #include "userprog/gdt.h"
 #include "threads/interrupt.h"
 #include "threads/thread.h"
+#include "vm/spage.h"
+#include "vm/frame.h"
+#include "filesys/inode.h"
+
+struct list visited_pages;
+//struct spage_table add_supp; //maps to virtual pages one-to-one. has a pointer to the corresponding page table
+struct lock spage_table_access;
 
 /* Number of page faults processed. */
 static long long page_fault_cnt;
@@ -151,11 +159,51 @@ page_fault (struct intr_frame *f)
   /* To implement virtual memory, delete the rest of the function
      body, and replace it with code that brings in the page to
      which fault_addr refers. */
+
+  /* custome code */
+  if (not_present == 0) {
+    //then the fault address page needs info to be passed into it
+    // spage_load_file(fault_addr);
+
+    // //"fault_addr" is the address in which the page fault occured in virtual memory
+    // lock_acquire(&spage_table_access);
+    // *add_supp.pt_ptr = fault_addr;
+
+    if (fault_addr > PHYS_BASE) {
+      PANIC("faulted Address in kernel space!");
+    }
+
+    lock_acquire(&spage_table_access);
+    struct spage* curr_sp;
+    struct list_elem* e;
+    for(e = list_begin(&visited_pages); e != list_end(&visited_pages); e = list_next(e)) {
+      struct spage *sp = list_entry(e, struct spage, elem);
+      if (sp->pt_ptr == (uint32_t*)fault_addr) {
+
+        //at this point, sp->pt_ptr contains the faulted address
+        if (sp->valid_access == 0) {
+          lock_release(&spage_table_access);
+          PANIC("Faulted address access invalid!");
+          return;
+        }
+
+        sp->pt_ptr = file_open(inode_open(*sp->pt_ptr));
+      }
+    }
+
+
+
+    lock_release(&spage_table_access);
+
+  }
+
+
+  /* end custom code */
   printf ("Page fault at %p: %s error %s page in %s context.\n",
           fault_addr,
           not_present ? "not present" : "rights violation",
           write ? "writing" : "reading",
           user ? "user" : "kernel");
-  kill (f);
+  
+  //kill (f);
 }
-
