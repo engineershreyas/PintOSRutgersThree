@@ -96,7 +96,7 @@ bool swap_load(struct spage *sp){
 	return true;
 }
 
-bool load_file (struct spage *sp){
+bool file_load (struct spage *sp){
 	enum palloc_flags flags = PAL_USER;
 	if(sp->read_count == 0) flags |= PAL_ZERO;
 	uint8_t *frame = allocate_frame(flags,sp);
