@@ -88,7 +88,7 @@ bool stack_grow (void *data){
 		return false;
 	}
 
-	struct hash_elem *insert = hash_insert(&thread_current()->supp_page_table, &sp->elem);
+	struct hash_elem *insert = hash_insert(&thread_current()->supp_page_table, &sp->h_elem);
 
 	return insert == NULL;
 

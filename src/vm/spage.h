@@ -2,7 +2,7 @@
 #include "threads/thread.h"
 #include "lib/kernel/list.h"
 #include "lib/kernel/hash.h"
-#include "vm/frame.h"
+#include "frame.h"
 #include "userprog/process.h"
 
 #ifndef VM_SPAGE_H
@@ -24,6 +24,7 @@ struct spage {
 	bool read_only; //checks if the pt_ptr points to read-only memory
 
 	struct list_elem elem;
+	struct hash_elem h_elem;
 };
 
 
