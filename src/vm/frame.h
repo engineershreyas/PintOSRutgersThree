@@ -5,6 +5,7 @@
 #include "threads/thread.h"
 #include "lib/kernel/list.h"
 #include "vm/spage.h"
+#include "threads/palloc.h"
 
 /*custom structures */
 // because we give each frame a page variable to be mapped to, we can just store the frame onto an list
