@@ -168,7 +168,7 @@ page_fault (struct intr_frame *f)
       load = page_load(sp);
       sp->stick = false;
     }
-    else if(fault_adr >= f->esp - STACK_HEURISTIC){
+    else if(fault_addr >= f->esp - STACK_HEURISTIC){
       load = stack_grow(fault_adr);
     }
 
