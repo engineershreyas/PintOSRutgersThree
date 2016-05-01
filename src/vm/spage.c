@@ -86,7 +86,7 @@ struct spage* get_sp(void *addr){
 	struct spage sp;
 	sp.data_to_fetch = pg_round_down(addr);
 
-	struct hash_elem *e = hash_find(*thread_current()->supp_page_table, &sp.elem);
+	struct hash_elem *e = hash_find(*thread_current()->supp_page_table, &sp.h_elem);
 	if(e == NULL) return NULL;
 
 	return hash_entry (e, struct spage, elem);
