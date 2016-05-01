@@ -163,7 +163,7 @@ page_fault (struct intr_frame *f)
 
   if(valid){
 
-    struct spage *sp = get_sp(fault_adr);
+    struct spage *sp = get_sp(fault_addr);
     if(sp != NULL){
       load = page_load(sp);
       sp->stick = false;
@@ -230,7 +230,7 @@ page_fault (struct intr_frame *f)
   }
 
 
-  /* end custom code 
+  /* end custom code
   printf ("Page fault at %p: %s error %s page in %s context.\n",
           fault_addr,
           not_present ? "not present" : "rights violation",
