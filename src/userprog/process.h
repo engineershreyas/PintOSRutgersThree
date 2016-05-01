@@ -14,6 +14,7 @@ int process_wait (tid_t);
 void process_exit (void);
 void process_activate (void);
 struct process *get_child (pid_t pid);
+bool install_page (void *upage, void *kpage, bool writable);
 
 /* Definitions of sizes in argument page for args and argv. */
 #define ARGS_SIZE PGSIZE / 2                                                       /* File_name+Arguments size. */
