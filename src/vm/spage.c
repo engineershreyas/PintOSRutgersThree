@@ -39,7 +39,7 @@ static bool spage_action(struct hash_elem *e, void *aux UNUSED){
 
 	if(sp->valid_access){
 		free_frame(pagedir_get_page(thread_current()->pagedir, sp->data_to_fetch));
-		pagedir_clear_page(thread_current()->pagedir, sp->data_to_fetch)
+		pagedir_clear_page(thread_current()->pagedir, sp->data_to_fetch);
 	}
 	free(sp);
 }
@@ -52,7 +52,7 @@ void spage_table_init(struct hash *spt) {
 }
 
 void spage_table_destroy(struct hash *spt){
-	hash_destroy(spt,page_action_func);
+	hash_destroy(spt,page_action);
 }
 
 void set_on_pte(void) { //sets a spage table's parameters based on the page table entry
@@ -207,7 +207,7 @@ bool stack_grow (void *data){
 		return false;
 	}
 
-	if(intr_context()) sp->pinned = false;
+	if(intr_context()) sp->sticky = false;
 
 	struct hash_elem *insert = hash_insert(&thread_current()->supp_page_table, &sp->h_elem);
 
