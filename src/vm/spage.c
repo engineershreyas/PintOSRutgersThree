@@ -16,9 +16,43 @@ struct list visited_pages;
 //struct spage_table add_supp; //maps to virtual pages one-to-one. has a pointer to the corresponding page table
 struct lock spage_table_access;
 
-void spage_table_init(void) {
+
+static unsigned spage_hash(const struct hash_elem *e, void *aux UNUSED){
+	struct spage *sp = hash_entry(e, struct spage, h_elem);
+
+	return hash_int((int)sp->data_to_fetch);
+}
+
+
+static bool spage_less(const struct hash_elem *a, const struct hash_elem *b, void *aux UNUSED){
+	struct spage *sa = hash_entry(a, struct spage, h_elem);
+	struct spage *sb = hash_entry(b, struct spage, h_elem);
+
+	if(sa->data_to_fetch < sb->data_to_fetch) return true;
+
+	return false;
+
+}
+
+static bool spage_action(struct hash_elem *e, void *aux UNUSED){
+	struct spage *sp = hash_entry(e, struct spage, h_elem);
+
+	if(sp->valid_access){
+		free_frame(pagedir_get_page(thread_current()->pagedir, sp->data_to_fetch));
+		pagedir_clear_page(thread_current()->pagedir, sp->data_to_fetch)
+	}
+	free(sp);
+}
+
+
+void spage_table_init(struct hash *spt) {
 	list_init(&visited_pages);
 	lock_init(&spage_table_access);
+	hash_init(spt, spage_hash, spage_less, NULL);
+}
+
+void spage_table_destroy(struct hash *spt){
+	hash_destroy(spt,page_action_func);
 }
 
 void set_on_pte(void) { //sets a spage table's parameters based on the page table entry
@@ -156,6 +190,7 @@ bool stack_grow (void *data){
 	sp->valid_access = true;
 	sp->type = SWAP;
 	sp->read_only = false;
+	sp->sticky = true;
 
 	uint8_t *frame = allocate_frame(PAL_USER, sp);
 
@@ -171,6 +206,8 @@ bool stack_grow (void *data){
 		free_frame(frame);
 		return false;
 	}
+
+	if(intr_context()) sp->pinned = false;
 
 	struct hash_elem *insert = hash_insert(&thread_current()->supp_page_table, &sp->h_elem);
 

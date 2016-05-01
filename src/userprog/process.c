@@ -100,6 +100,8 @@ start_process (void *args_)
   bool success = false;
   struct process *p;
 
+  spage_table_init(&thread_current()->supp_page_table);
+
   /* Initialize interrupt frame and load executable. */
   memset (&if_, 0, sizeof if_);
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
@@ -180,6 +182,8 @@ process_exit (void)
       free (file_d);
     }
 
+
+    spage_table_destroy(&cur->supp_page_table);
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
   pd = cur->pagedir;
