@@ -115,7 +115,7 @@ bool load_file (struct spage *sp){
 		}
 
 		lock_release(&file_lock);
-		memset(frame + sp->read_count, 0, sp->zero_counts);
+		memset(frame + sp->read_count, 0, sp->zero_count);
 
 	}
 
