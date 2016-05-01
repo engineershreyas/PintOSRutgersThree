@@ -69,10 +69,10 @@ bool page_load(struct spage *sp){
 	switch(sp->type){
 
 		case FILE:
-			//TODO: load a file;
+			success = file_load(sp);
 			break;
 		case SWAP:
-			//TODO: load a swap
+			success = swap_load(sp);
 			break;
 		default:
 			break;
