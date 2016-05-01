@@ -28,7 +28,7 @@ static void argument_tokenize (struct args_struct *args);
 static bool push_args_to_stack (struct args_struct *args, void **esp);
 static bool push_byte_to_stack (uint8_t val, void **esp);
 static bool push_word_to_stack (uint32_t val, void **esp);
-static bool install_page (void *upage, void *kpage, bool writable);
+
 struct process *get_child (pid_t pid);
 
 /* Returns child of current thread with given PID or NULL If non exists. */
