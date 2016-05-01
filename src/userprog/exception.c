@@ -166,10 +166,10 @@ page_fault (struct intr_frame *f)
     struct spage *sp = get_sp(fault_addr);
     if(sp != NULL){
       load = page_load(sp);
-      sp->stick = false;
+      sp->sticky = false;
     }
     else if(fault_addr >= f->esp - STACK_HEURISTIC){
-      load = stack_grow(fault_adr);
+      load = stack_grow(fault_addr);
     }
 
   }
