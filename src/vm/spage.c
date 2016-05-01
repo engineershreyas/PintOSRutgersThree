@@ -18,9 +18,9 @@ void spage_table_init(void) {
 	lock_init(&spage_table_access);
 }
 
-void set_on_pte(void) { //sets a spage table's parameters based on the page table entry 
+void set_on_pte(void) { //sets a spage table's parameters based on the page table entry
 	//init_page_dir in  the init.h file is used as the main page table
-	
+
 	lock_acquire(& spage_table_access);
 	//check if pte exists on the visited pages list, if not then add it
 	struct list_elem* e;
@@ -56,4 +56,40 @@ void set_on_pte(void) { //sets a spage table's parameters based on the page tabl
 	lock_release(&spage_table_access);
 
 	return;
+}
+
+
+bool stack_grow (void *data){
+
+	if ((size_t)(PHYS_BASE - pg_round_down(data)) > STACK_MAX) return false;
+
+	struct spage *sp = malloc(sizeof(struct spage));
+
+	if(sp == NULL) return false;
+
+	sp->data_to_fetch = pg_round_down(data);
+	sp->valid_access = true;
+	sp->pt_ptr = SWAP;
+	sp->read_only = false;
+
+	uint8_t *frame = allocate_frame(PAL_USER, sp);
+
+	if(!frame){
+		free(sp);
+		return false;
+	}
+
+	bool success = install_page(sp->data_to_fetch, frame, !(sp->read_only));
+
+	if(!success){
+		free(sp);
+		frame_free(frame);
+		return false;
+	}
+
+	struct hash_elem *insert = hash_insert(&thread_current()->supp_page_table, &sp->elem);
+
+	return insert == NULL;
+
+
 }

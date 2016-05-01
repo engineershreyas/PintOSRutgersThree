@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include "threads/thread.h"
 #include "lib/kernel/list.h"
+#include "vm/spage.h"
 
 /*custom structures */
 // because we give each frame a page variable to be mapped to, we can just store the frame onto an list
@@ -16,11 +17,17 @@ struct frame {
 	//allows the frame to be stored to a list
 	struct list_elem elem;
 
+	//a frame object
+	void *frame;
+
+	//indicated to use if pages are in the list or if there is a frame object available
+	bool has_frame_data;
+
 	//store the data that the spage finds into a frame
-	void* data_from_spage;
+	struct spage *sp;
 };
 
-//used to be able to append a pointer of each page that maps to a frame to the "page_mapping" list 
+//used to be able to append a pointer of each page that maps to a frame to the "page_mapping" list
 struct page_to_frame {
 	void* page_to_frame_ptr;
 	struct list_elem elem;
@@ -30,7 +37,13 @@ struct page_to_frame {
 //initialize globals
 void frame_table_init(void);
 //returns viod
-void add_to_frame_table(void* pages, size_t page_cnt);
+void add_to_frame_table_with_pages(void* pages);
+
+void add_to_frame_table(void *frame, struct spage *sp);
+
+//methods to allocate and free a frame
+void* allocate_frame(enum palloc_flags flags, struct spage *sp);
+void free_frame(void *frame);
 /* end custom functions */
 
 #endif

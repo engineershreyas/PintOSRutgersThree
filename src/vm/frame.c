@@ -1,4 +1,4 @@
-#include "threads/palloc.h"
+ #include "threads/palloc.h"
 #include <bitmap.h>
 #include <debug.h>
 #include <inttypes.h>
@@ -10,6 +10,8 @@
 #include "threads/loader.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
+#include "threads/malloc.h"
+#include "threads/palloc.h"
 #include "vm/frame.h"
 
 /*custom variable */
@@ -18,6 +20,9 @@
 struct list frame_table;
 //lock used to access the frame_table from the thread
 struct lock frame_table_access;
+
+
+
 
 /* custom function
 * this function is used to map a frame to a page
@@ -29,7 +34,49 @@ void frame_table_init(void) {
   lock_init(&frame_table_access);
 }
 
-void add_to_frame_table(void* pages, size_t page_cnt) {
+void* allocate_frame(enum palloc_flags flags, struct spage *sp){
+
+  if((flags & PAL_USER) == 0) return NULL;
+
+  void *frame = palloc_get_page(flags);
+
+  if(frame) add_to_frame_table(frame,sp);
+  else{
+
+      //TODO: add logic to find a frame by evicting frame by flags
+
+      if(!frame) PANIC ("Evict not possible, SWAP full");
+
+      add_to_frame_table(frame,sp);
+
+  }
+
+  return frame;
+
+}
+
+void free_frame(void *frame){
+
+    struct list_elem *e;
+
+    lock_acquire(&frame_table_access);
+    for(e = list_begin(&frame_table); e != list_end(&frame_table); e = list_next(e)){
+
+        struct frame *f = list_entry(e, struct frame, elem);
+        if(f->frame == frame){
+          list_remove(e);
+          free(f);
+          palloc_free_page(frame);
+          breakl
+        }
+    }
+
+    lock_release(&frame_table_access);
+
+
+}
+
+void add_to_frame_table_with_pages(void* pages, struct spage *sp) {
 
 	if (list_size(&frame_table) == 512) {
 		PANIC("Frame table full!");
@@ -56,6 +103,8 @@ void add_to_frame_table(void* pages, size_t page_cnt) {
 	//prep page for storing to list
 	curr_page.page_to_frame_ptr = pages;
 	curr_frame.owner_thread = thread_current();
+  curr_frame.has_frame_data = false;
+  curr_frame.sp = sp;
 
 	list_push_back(&curr_frame.page_mapping, &curr_page.elem);
 	//push to the frame table
@@ -64,5 +113,21 @@ void add_to_frame_table(void* pages, size_t page_cnt) {
 	lock_release(&frame_table_access);
 
 }
+
+void add_to_frame_table(void *frame, struct spage *sp){
+
+  struct frame *f = malloc(sizeof(struct frame));
+
+  f->frame = frame;
+  f->sp = sp;
+  f->owner_thread = thread_current();
+  f->has_frame_data = true;
+  lock_acquire(&frame_table_access);
+  list_push_back(&frame_table,f);
+  lock_release(&frame_table_access);
+
+}
+
+
 
 /*end custom function */

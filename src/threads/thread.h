@@ -23,7 +23,7 @@ typedef int tid_t;
 typedef int pid_t;
 #define TID_ERROR ((tid_t) -1) /* Error value for tid_t. */
 #define PID_ERROR ((pid_t) -1) /* Error value for pid_t. */
-         
+
 #include "userprog/process.h"
 
 /* States in a process's life cycle. */;
@@ -115,7 +115,7 @@ struct thread
     char name[16];                      /* Name (for debugging purposes). */
     uint8_t *stack;                     /* Saved stack pointer. */
     int priority;                       /* Priority. */
- 
+
     struct list_elem allelem;           /* List element for all threads list. */
 
     /* Shared between thread.c and synch.c. */
@@ -125,15 +125,18 @@ struct thread
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
 
-    int fd;                             /* Assigned file descriptors. */ 
+    int fd;                             /* Assigned file descriptors. */
     struct process *proc;               /* Process state and synch. */
     struct list files;                  /* Open file descriptors. */
     struct list children;               /* List of Child processes. */
-    
+
 #endif
- 
+
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
+
+    struct hash supp_page_table;
+
   };
 
 /* If false (default), use round-robin scheduler.

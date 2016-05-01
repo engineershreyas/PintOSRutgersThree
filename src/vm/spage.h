@@ -7,6 +7,10 @@
 #ifndef VM_SPAGE_H
 #define VM_SPAGE_H
 
+#define STACK_MAX (1 << 18)
+
+#define SWAP 1
+
 extern struct list visited_pages;
 //struct spage_table add_supp; //maps to virtual pages one-to-one. has a pointer to the corresponding page table
 extern struct lock spage_table_access;
@@ -28,5 +32,6 @@ struct spage {
 void spage_table_init(void);
 void store_visited_page(void); //pass current pt address to the supplemental pt
 void set_on_pte(void);
+bool stack_grow(void *data);
 
 #endif
