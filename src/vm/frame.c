@@ -11,7 +11,7 @@
 #include "threads/synch.h"
 #include "threads/vaddr.h"
 #include "threads/malloc.h"
-#include "threads/palloc.h"
+
 #include "vm/frame.h"
 
 /*custom variable */
@@ -67,7 +67,7 @@ void free_frame(void *frame){
           list_remove(e);
           free(f);
           palloc_free_page(frame);
-          breakl
+          break;
         }
     }
 
@@ -109,7 +109,7 @@ void add_to_frame_table_with_pages(void* pages, struct spage *sp) {
 	list_push_back(&curr_frame.page_mapping, &curr_page.elem);
 	//push to the frame table
 	lock_acquire(&frame_table_access);
-	list_push_back(&frame_table, &curr_frame);
+	list_push_back(&frame_table, &(curr_frame.elem));
 	lock_release(&frame_table_access);
 
 }
@@ -123,7 +123,7 @@ void add_to_frame_table(void *frame, struct spage *sp){
   f->owner_thread = thread_current();
   f->has_frame_data = true;
   lock_acquire(&frame_table_access);
-  list_push_back(&frame_table,f);
+  list_push_back(&frame_table,&(f->elem));
   lock_release(&frame_table_access);
 
 }
