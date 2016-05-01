@@ -27,7 +27,7 @@ struct frame {
 	//store the data that the spage finds into a frame
 	struct spage *sp;
 
-	struct list_elem elem;
+
 };
 
 //used to be able to append a pointer of each page that maps to a frame to the "page_mapping" list
@@ -40,7 +40,7 @@ struct page_to_frame {
 //initialize globals
 void frame_table_init(void);
 //returns viod
-void add_to_frame_table_with_pages(void* pages, sturct spage *sp);
+void add_to_frame_table_with_pages(void* pages, struct spage *sp);
 
 void add_to_frame_table(void *frame, struct spage *sp);
 
