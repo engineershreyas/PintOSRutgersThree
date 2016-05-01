@@ -4,6 +4,8 @@
 #include "vm/frame.h"
 #include "filesys/file.h"
 #include "vm/spage.h"
+#include "threads/palloc.h"
+#include "threads/malloc.h"
 
 /*REMEMBER:
 the page table pointer points to the physical addresses
