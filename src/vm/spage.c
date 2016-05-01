@@ -1,7 +1,6 @@
 #include "threads/init.h"
 #include "userprog/pagedir.h"
 #include "lib/kernel/list.h"
-#include "vm/frame.h"
 #include "filesys/file.h"
 #include "vm/spage.h"
 #include "threads/palloc.h"
@@ -85,7 +84,7 @@ bool stack_grow (void *data){
 
 	if(!success){
 		free(sp);
-		frame_free(frame);
+		free_frame(frame);
 		return false;
 	}
 

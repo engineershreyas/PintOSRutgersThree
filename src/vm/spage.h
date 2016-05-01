@@ -3,6 +3,7 @@
 #include "lib/kernel/list.h"
 #include "lib/kernel/hash.h"
 #include "vm/frame.h"
+#include "userprog/process.h"
 
 #ifndef VM_SPAGE_H
 #define VM_SPAGE_H
