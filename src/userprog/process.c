@@ -610,7 +610,7 @@ setup_stack (struct args_struct *args_struct_ptr,void **esp)
 
 
 
-  return result
+  return result;
 }
 
 /* Push arguments into the stack. */
