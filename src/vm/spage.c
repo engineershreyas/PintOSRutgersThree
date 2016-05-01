@@ -52,7 +52,7 @@ void spage_table_init(struct hash *spt) {
 }
 
 void spage_table_destroy(struct hash *spt){
-	hash_destroy(spt,page_action);
+	hash_destroy(spt,spage_action);
 }
 
 void set_on_pte(void) { //sets a spage table's parameters based on the page table entry
