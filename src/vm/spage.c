@@ -5,6 +5,8 @@
 #include "vm/spage.h"
 #include "threads/palloc.h"
 #include "threads/malloc.h"
+#include "userprog/syscall.h"
+#include "filesys/file.h"
 
 /*REMEMBER:
 the page table pointer points to the physical addresses
@@ -78,6 +80,54 @@ bool page_load(struct spage *sp){
 	}
 
 	return success;
+
+}
+
+bool swap_load(struct spage *sp){
+	uint8_t *frame = allocate_frame (PAL_USER, sp);
+	if (!frame) return false;
+	if(!install_page(sp->data_to_fetch, frame, !sp->read_only)){
+		free_frame(frame);
+		return false;
+	}
+
+	//swap
+	sp->valid_access = true;
+	return true;
+}
+
+bool load_file (struct spage *sp){
+	enum palloc_flags flags = PAL_USER;
+	if(sp->read_count == 0) flags |= PAL_ZER0;
+	uint8_t *frame = allocate_frame(flags,sp);
+
+	if(frame == NULL) return false;
+
+	if(sp->read_count > 0){
+
+		lock_acquire(&file_lock);
+		if((int)sp->read_count != file_read_at(sp->file,frame,sp->read_count,sp->offset)){
+
+			lock_release(&file_lock);
+			free_frame(frame);
+			return false;
+
+		}
+
+		lock_release(&file_lock);
+		memset(frame + sp->read_count, 0, sp->zero_counts);
+
+	}
+
+
+	if(!install_page(sp->data_to_fetch, frame, !sp->read_only)){
+		free_frame(frame);
+		return false;
+	}
+
+	sp->valid_access = true;
+
+	return true;
 
 }
 

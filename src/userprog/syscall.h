@@ -8,6 +8,8 @@
 #define USER_VADDR_BOTTOM ((void *) 0x08048000)
 #define STACK_HEURISTIC 32
 
+struct lock file_lock;
+
 void syscall_init (void);
 
 #endif /* userprog/syscall.h */

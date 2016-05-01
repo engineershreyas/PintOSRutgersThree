@@ -56,6 +56,8 @@ void set_on_pte(void);
 bool stack_grow(void *data);
 
 bool page_load(struct spage *sp);
+bool swap_load(struct spage *sp);
+bool file_load(struct spage *sp);
 struct spage* get_sp (void *addr);
 
 
