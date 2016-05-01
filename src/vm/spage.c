@@ -89,7 +89,7 @@ struct spage* get_sp(void *addr){
 	struct hash_elem *e = hash_find(&thread_current()->supp_page_table, &sp.h_elem);
 	if(e == NULL) return NULL;
 
-	return hash_entry (e, struct spage, elem);
+	return hash_entry (e, struct spage, h_elem);
 
 }
 
