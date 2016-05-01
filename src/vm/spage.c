@@ -49,7 +49,7 @@ void set_on_pte(void) { //sets a spage table's parameters based on the page tabl
 		return;
 	}
 
-	bit1 = 0x02; //bit 2 of the page table entry states if the address is writable;
+	int bit1 = 0x02; //bit 2 of the page table entry states if the address is writable;
 
 	//checks if bit 2 of the page table entry is set
 	*add_supp.pt_ptr & bit1 ? stp.read_only = 0 : add_supp.read_only = 1;
