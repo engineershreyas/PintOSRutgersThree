@@ -8,6 +8,8 @@
 #include "vm/spage.h"
 #include "vm/frame.h"
 #include "filesys/inode.h"
+#include "userprog/syscall.h"
+#include "threads/vaddr.h"
 
 struct list visited_pages;
 //struct spage_table add_supp; //maps to virtual pages one-to-one. has a pointer to the corresponding page table
@@ -35,7 +37,7 @@ static void page_fault (struct intr_frame *);
    Refer to [IA32-v3a] section 5.15 "Exception and Interrupt
    Reference" for a description of each of these exceptions. */
 void
-exception_init (void) 
+exception_init (void)
 {
   /* These exceptions can be raised explicitly by a user program,
      e.g. via the INT, INT3, INTO, and BOUND instructions.  Thus,
@@ -70,14 +72,14 @@ exception_init (void)
 
 /* Prints exception statistics. */
 void
-exception_print_stats (void) 
+exception_print_stats (void)
 {
   printf ("Exception: %lld page faults\n", page_fault_cnt);
 }
 
 /* Handler for an exception (probably) caused by a user process. */
 static void
-kill (struct intr_frame *f) 
+kill (struct intr_frame *f)
 {
   /* This interrupt is one (probably) caused by a user process.
      For example, the process might have tried to access unmapped
@@ -86,7 +88,7 @@ kill (struct intr_frame *f)
      the kernel.  Real Unix-like operating systems pass most
      exceptions back to the process via signals, but we don't
      implement them. */
-     
+
   /* The interrupt frame's code segment value tells us where the
      exception originated. */
   switch (f->cs)
@@ -97,7 +99,7 @@ kill (struct intr_frame *f)
       printf ("%s: dying due to interrupt %#04x (%s).\n",
               thread_name (), f->vec_no, intr_name (f->vec_no));
       intr_dump_frame (f);
-      thread_exit (); 
+      thread_exit ();
 
     case SEL_KCSEG:
       /* Kernel's code segment, which indicates a kernel bug.
@@ -105,7 +107,7 @@ kill (struct intr_frame *f)
          may cause kernel exceptions--but they shouldn't arrive
          here.)  Panic the kernel to make the point.  */
       intr_dump_frame (f);
-      PANIC ("Kernel bug - unexpected interrupt in kernel"); 
+      PANIC ("Kernel bug - unexpected interrupt in kernel");
 
     default:
       /* Some other code segment?  Shouldn't happen.  Panic the
@@ -128,7 +130,7 @@ kill (struct intr_frame *f)
    description of "Interrupt 14--Page Fault Exception (#PF)" in
    [IA32-v3a] section 5.15 "Exception and Interrupt Reference". */
 static void
-page_fault (struct intr_frame *f) 
+page_fault (struct intr_frame *f)
 {
   bool not_present;  /* True: not-present page, false: writing r/o page. */
   bool write;        /* True: access was write, false: access was read. */
@@ -156,11 +158,40 @@ page_fault (struct intr_frame *f)
   write = (f->error_code & PF_W) != 0;
   user = (f->error_code & PF_U) != 0;
 
+  bool load = false;
+  bool valid = not_present && fault_addr > USER_VADDR_BOTTOM && is_user_vaddr(fault_addr);
+
+  if(valid){
+
+    struct spage *sp = get_sp(fault_adr);
+    if(sp != NULL){
+      load = page_load(sp);
+      sp->stick = false;
+    }
+    else if(fault_adr >= f->esp - STACK_HEURISTIC){
+      load = stack_grow(fault_adr);
+    }
+
+  }
+  if(!load){
+
+    printf ("Page fault at %p: %s error %s page in %s context.\n",
+            fault_addr,
+            not_present ? "not present" : "rights violation",
+            write ? "writing" : "reading",
+            user ? "user" : "kernel");
+
+    kill (f);
+
+  }
+
+
   /* To implement virtual memory, delete the rest of the function
      body, and replace it with code that brings in the page to
      which fault_addr refers. */
 
-  /* custome code */
+
+  /* custome code
   if (not_present == 0) {
     //then the fault address page needs info to be passed into it
     // spage_load_file(fault_addr);
@@ -195,15 +226,18 @@ page_fault (struct intr_frame *f)
 
     lock_release(&spage_table_access);
 
+
   }
 
 
-  /* end custom code */
+  /* end custom code 
   printf ("Page fault at %p: %s error %s page in %s context.\n",
           fault_addr,
           not_present ? "not present" : "rights violation",
           write ? "writing" : "reading",
           user ? "user" : "kernel");
-  
+
   //kill (f);
+
+  */
 }

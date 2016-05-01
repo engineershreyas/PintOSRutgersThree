@@ -585,7 +585,9 @@ setup_stack (struct args_struct *args_struct_ptr,void **esp)
     return success;
   }
 
-  return push_args_to_stack(args_struct_ptr, esp);
+  bool result =  push_args_to_stack(args_struct_ptr, esp);
+
+  hex_dump(*esp, *esp, (int) ((size_t) PHYS_BASE - (size_t) *esp), true);
 
   /*
   uint8_t *kpage;
@@ -608,7 +610,7 @@ setup_stack (struct args_struct *args_struct_ptr,void **esp)
 
 
 
-  //return (success_for_stack_page_allocation && success_for_setup_stack);
+  return result
 }
 
 /* Push arguments into the stack. */

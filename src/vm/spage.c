@@ -1,7 +1,7 @@
 #include "threads/init.h"
 #include "userprog/pagedir.h"
 #include "lib/kernel/list.h"
-#include "filesys/file.h"
+
 #include "vm/spage.h"
 #include "threads/palloc.h"
 #include "threads/malloc.h"
@@ -59,6 +59,40 @@ void set_on_pte(void) { //sets a spage table's parameters based on the page tabl
 	return;
 }
 
+bool page_load(struct spage *sp){
+	bool success = false;
+	sp->sticky = true;
+	if (sp->valid_access) return success;
+
+	switch(sp->type){
+
+		case FILE:
+			//TODO: load a file;
+			break;
+		case SWAP:
+			//TODO: load a swap
+			break;
+		default:
+			break;
+
+	}
+
+	return success;
+
+}
+
+struct spage* get_sp(void *addr){
+
+	struct spage sp;
+	sp.data_to_fetch = pg_round_down(addr);
+
+	struct hash_elem *e = hash_find(*thread_current()->supp_page_table, &sp.elem);
+	if(e == NULL) return NULL;
+
+	return hash_entry (e, struct spage, elem);
+
+}
+
 
 bool stack_grow (void *data){
 
@@ -70,7 +104,7 @@ bool stack_grow (void *data){
 
 	sp->data_to_fetch = pg_round_down(data);
 	sp->valid_access = true;
-	sp->pt_ptr = SWAP;
+	sp->type = SWAP;
 	sp->read_only = false;
 
 	uint8_t *frame = allocate_frame(PAL_USER, sp);

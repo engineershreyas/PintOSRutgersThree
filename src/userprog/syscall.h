@@ -5,6 +5,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define USER_VADDR_BOTTOM ((void *) 0x08048000)
+#define STACK_HEURISTIC 32
+
 void syscall_init (void);
 
 #endif /* userprog/syscall.h */
