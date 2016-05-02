@@ -184,6 +184,8 @@ process_exit (void)
       free (file_d);
     }
 
+    spage_table_destroy(&cur->supp_page_table);
+
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
   pd = cur->pagedir;
