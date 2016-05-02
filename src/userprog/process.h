@@ -5,6 +5,7 @@
 #include "threads/synch.h"
 #include "threads/vaddr.h"
 #include "filesys/file.h"
+#include "vm/spage.h"
 #include <stdbool.h>
 #include <list.h>
 
