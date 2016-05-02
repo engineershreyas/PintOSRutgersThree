@@ -547,7 +547,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
 
-    if(!add(file,ofs,upage,page_read_bytes,page_zero_bytes,writable)) return false;
+    if(!add_file_to_page_table(file,ofs,upage,page_read_bytes,page_zero_bytes,writable)) return false;
 
       /* Advance. */
       read_bytes -= page_read_bytes;
