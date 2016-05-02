@@ -1,4 +1,4 @@
-#include "init.h"
+#include "threads/init.h"
 #include "userprog/pagedir.h"
 #include "lib/kernel/list.h"
 #include "vm/frame.h"
@@ -49,11 +49,45 @@ void set_on_pte(void) { //sets a spage table's parameters based on the page tabl
 		return;
 	}
 
-	bit1 = 0x02; //bit 2 of the page table entry states if the address is writable;
+	uint32_t bit1 = 0x02; //bit 2 of the page table entry states if the address is writable;
 
 	//checks if bit 2 of the page table entry is set
-	*add_supp.pt_ptr & bit1 ? stp.read_only = 0 : add_supp.read_only = 1;
+	//*add_supp.pt_ptr & bit1 ? stp.read_only = 0 : add_supp.read_only = 1;
+
+	if (*add_supp.pt_ptr & bit1) {
+		add_supp.read_only = 0;
+	} else {
+		add_supp.read_only = 1;
+	}
 	lock_release(&spage_table_access);
 
 	return;
+}
+
+void spage_load_file(void* fault_addr) {
+	 if (fault_addr > PHYS_BASE) {
+      PANIC("faulted Address in kernel space!");
+    }
+
+    lock_acquire(&spage_table_access);
+    struct spage* curr_sp;
+    struct list_elem* e;
+    for(e = list_begin(&visited_pages); e != list_end(&visited_pages); e = list_next(e)) {
+      struct spage *sp = list_entry(e, struct spage, elem);
+      if (sp->pt_ptr == (uint32_t*)fault_addr) {
+
+        //at this point, sp->pt_ptr contains the faulted address
+        if (sp->valid_access == 0) {
+          lock_release(&spage_table_access);
+          PANIC("Faulted address access invalid!");
+          return;
+        }
+
+        sp->pt_ptr = file_open(inode_open(*sp->pt_ptr));
+      }
+    }
+
+
+
+    lock_release(&spage_table_access);
 }

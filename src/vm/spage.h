@@ -28,5 +28,6 @@ struct spage {
 void spage_table_init(void);
 void store_visited_page(void); //pass current pt address to the supplemental pt
 void set_on_pte(void);
+void spage_load_file(void* fault_addr);
 
 #endif
