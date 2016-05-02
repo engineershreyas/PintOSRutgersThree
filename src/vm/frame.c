@@ -18,7 +18,7 @@ void frame_table_init (void){
   lock_init(&frame_table_access);
 }
 
-void *allocate_frame(enum palloc_flags flags, struct spage *sp){
+void* allocate_frame(enum palloc_flags flags, struct spage *sp){
 
     if((flags & PAL_USER) == 0) return NULL;
 

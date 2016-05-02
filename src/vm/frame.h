@@ -7,7 +7,7 @@
 
 #include "threads/palloc.h"
 #include "threads/synch.h"
-#include "vm/page.h"
+#include "vm/spage.h"
 
 struct lock frame_table_access;
 
@@ -15,7 +15,7 @@ struct list frame_table;
 
 //struct representing a frame
 struct frame {
-  void *frame //frame object
+  void *frame; //frame object
   struct thread *owner_thread; //thread that owns this frame
   struct spage *sp; //supplemental page mapping to this frame
 
