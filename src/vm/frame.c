@@ -1,6 +1,5 @@
 #include "vm/frame.h"
-#include "vm/frame.h"
-#include "vm/page.h"
+#include "vm/spage.h"
 #include "vm/swap.h"
 
 #include "filesys/file.h"
@@ -65,7 +64,7 @@ void add_frame_to_table(void *frame, struct spage *sp){
   lock_release(&frame_table_access);
 }
 
-void *frame_evict(enum palloc_flags flags){
+void* evict_frame(enum palloc_flags flags){
   lock_acquire(&frame_table_access);
   struct list_elem *e = list_begin(&frame_table);
 
