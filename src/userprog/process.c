@@ -64,6 +64,10 @@ process_execute (const char *args)
     return TID_ERROR;
   strlcpy (args_struct_ptr->args, args, ARGS_SIZE);
 
+  if(is_user_vaddr(args)){
+    args = pagedir_get_page(thread_current()->pagedir, args);
+  }
+
   /* Tokenize arguments. */
   argument_tokenize (args_struct_ptr);
   if (args_struct_ptr->argc == BAD_ARGS)

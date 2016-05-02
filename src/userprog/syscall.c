@@ -235,52 +235,136 @@ static void
 syscall_handler (struct intr_frame *f)
 {
   uint32_t *esp = f->esp;
-  if (not_valid(esp))
-    exit (-1);
-  switch (*esp)
+  check_valid_ptr((const void*)esp,esp);
+
+  switch (* (int *)esp)
     {
       case SYS_HALT:
         halt ();
         break;
       case SYS_EXIT:
-        if (not_valid(esp+1)) exit(-1);
+        get_arg(f, &ARG0, 1);
         exit ((int) ARG0);
         break;
       case SYS_EXEC:
+        get_arg(f,&ARG0, 1)
+        check_valid_string((const void *)ARG0,esp);
         f->eax = exec ((const char *) ARG0);
         break;
       case SYS_WAIT:
+        get_arg(f, &ARG0, 1);
         f->eax = wait ((pid_t) ARG0);
         break;
       case SYS_CREATE:
+        get_arg(f, &ARG0, 2);
+        check_valid_string((const void *) ARG0, esp);
         f->eax = create ((const char *) ARG0, (unsigned) ARG1);
         break;
       case SYS_REMOVE:
+        get_arg(f, &ARG0, 1);
+        check_valid_string((const void *) arg[0], esp);
         f->eax = remove ((const char *) ARG0);
         break;
       case SYS_OPEN:
+        get_arg(f, &ARG0, 1);
+        check_valid_string((const void *)ARG0, esp);
         f->eax = open ((const char *) ARG0);
         break;
       case SYS_FILESIZE:
+        get_arg(f, &ARG0, 1);
         f->eax = filesize ((int) ARG0);
         break;
       case SYS_READ:
+        get_arg(f, &ARG0, 3);
+        check_valid_buffer((void *) ARG1, (unsigned) ARG2,esp,true);
         f->eax = read ((int) ARG0, (void *) ARG1, (unsigned) ARG2);
         break;
       case SYS_WRITE:
+        get_arg(f, &ARG0, 3);
+        check_valid_buffer((void *) ARG1, (unsigned) ARG2,esp,false);
         f->eax = write ((int) ARG0, (void *) ARG1, (unsigned) ARG2);
         break;
       case SYS_SEEK:
+        get_arg(f, &ARG0, 2);
         seek ((int) ARG0, (unsigned) ARG1);
         break;
       case SYS_TELL:
+        get_arg(f, &ARG0, 1);
         f->eax = tell ((int) ARG0);
         break;
       case SYS_CLOSE:
+        get_arg(f, &ARG0, 1);
         close ((int) ARG0);
         break;
       default:
         printf ("Invalid syscall!\n");
         thread_exit();
+    }
+}
+
+
+struct spage* check_valid_ptr(const void *vaddr, void* esp)
+{
+ if (!is_user_vaddr(vaddr) || vaddr < USER_VADDR_BOTTOM)
+   {
+     exit(ERROR);
+   }
+ bool load = false;
+ struct spage *sp = get_sp((void *) vaddr);
+ if (sp)
+   {
+     load_page(sp);
+     load = sp->valid_access;
+   }
+ else if (vaddr >= esp - STACK_HEURISTIC)
+   {
+     load = stack_grow((void *) vaddr);
+   }
+ if (!load)
+   {
+     exit(ERROR);
+   }
+ return sp;
+}
+
+void get_arg (struct intr_frame *f, int *arg, int n)
+{
+  int i;
+  int *ptr;
+  for (i = 0; i < n; i++)
+    {
+      ptr = (int *) f->esp + i + 1;
+      check_valid_ptr((const void *) ptr, f->esp);
+      arg[i] = *ptr;
+    }
+}
+
+void check_valid_buffer (void* buffer, unsigned size, void* esp,
+			 bool to_write)
+{
+  unsigned i;
+  char* local_buffer = (char *) buffer;
+  for (i = 0; i < size; i++)
+    {
+      struct spage *sp = check_valid_ptr((const void*)
+						    local_buffer, esp);
+      if (sp && to_write)
+	{
+	  if (sp->read_only)
+	    {
+	      exit(ERROR);
+	    }
+	}
+      local_buffer++;
+    }
+}
+
+void check_valid_string (const void* str, void* esp)
+{
+  check_valid_ptr(str, esp);
+  while (* (char *) str != 0)
+    {
+      str = (char *) str + 1;
+      check_valid_ptr(str, esp);
     }
 }
