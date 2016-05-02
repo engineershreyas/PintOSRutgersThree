@@ -349,12 +349,12 @@ void check_valid_buffer (void* buffer, unsigned size, void* esp,
       struct spage *sp = check_valid_ptr((const void*)
 						    local_buffer, esp);
       if (sp && to_write)
-	{
-	  if (sp->read_only)
 	    {
-	      exit(ERROR);
+	       if (sp->read_only)
+	        {
+	           exit(-1);
+	        }
 	    }
-	}
       local_buffer++;
     }
 }
