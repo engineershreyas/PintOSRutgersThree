@@ -5,6 +5,8 @@
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 #include "userprog/syscall.h"
+#include "vm/spage.h"
+#include "vm/frame.h"
 
 /* Number of page faults processed. */
 static long long page_fault_cnt;
@@ -157,7 +159,7 @@ page_fault (struct intr_frame *f)
       load = load_page(sp);
       sp->sticky = false;
     }
-    else if(fault_addr >= f->esp = STACK_HEURISTIC) load = stack_grow(fault_addr);
+    else if(fault_addr >= f->esp - STACK_HEURISTIC) load = stack_grow(fault_addr);
   }
 
   if(!load){
@@ -169,6 +171,6 @@ page_fault (struct intr_frame *f)
     kill (f);
   }
 
-  
+
 
 }
