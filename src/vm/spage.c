@@ -68,7 +68,7 @@ bool page_load (struct spage *sp){
   switch(sp->type){
     case FILE:
       success = file_load(sp);
-      break
+      break;
     case SWAP:
       success = swap_load(sp);
       break;
