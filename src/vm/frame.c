@@ -135,7 +135,7 @@ void* evict_frame (enum palloc_flags flags)
 
   while (true)
     {
-      struct frame *f = list_entry(e, struct frame_entry, elem);
+      struct frame *f = list_entry(e, struct frame, elem);
       if (!f->sp->sticky)
 	       {
 	          struct thread *t = f->owner_thread;
