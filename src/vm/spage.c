@@ -72,6 +72,9 @@ bool page_load (struct spage *sp){
     case SWAP:
       success = swap_load(sp);
       break;
+    case MMAP:
+      success = file_load(sp);
+      break;
   }
 
   return success;
@@ -143,6 +146,37 @@ bool add_file_to_table (struct file *file, int32_t offset, uint8_t *upage, uint3
   sp->sticky = false;
 
   return (hash_insert(&thread_current()->supp_page_table, &sp->h_elem) == NULL);
+}
+
+bool add_mmap_to_table (struct file *file, int32_t offset, uint8_t *upage, uint32_t read_count, uint32_t zero_count){
+
+  struct spage *sp = malloc(sizeof(struct spage));
+
+  if(!sp) return false;
+
+  sp->file = file;
+  sp->offset = offset;
+  sp->data_to_fetch = upage;
+  sp->read_count = read_count;
+  sp->zero_count = zero_count;
+  sp->valid_access = false;
+  sp->type = MMAP;
+  sp->read_only = false;
+  sp->sticky = false;
+
+  if(!process_add_mmap(sp)){
+    free(sp);
+    return false;
+  }
+
+  if(hash_insert(&thread_current()->supp_page_table, &sp->h_elem)){
+    sp->type = HASH_ERROR;
+    return false;
+  }
+
+  return true;
+
+
 }
 
 bool stack_grow(void *data_to_fetch){

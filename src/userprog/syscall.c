@@ -316,6 +316,14 @@ syscall_handler (struct intr_frame *f)
         get_arg(f, &ARG0, 1);
         close ((int) ARG0);
         break;
+      case SYS_MMAP:
+        get_arg(f, &ARG0, 2);
+        f->eax = mmap(ARG0, (void *) ARG1);
+        break;
+      case SYS_MUNMAP:
+        get_arg(f, &ARG0, 1);
+        munmap(&ARG0);
+        break;
       default:
         printf ("Invalid syscall!\n");
         thread_exit();
@@ -368,6 +376,38 @@ void check_valid_buffer(void* buffer, unsigned size, void* esp, bool to_write){
     local_buffer++;
   }
 
+}
+
+int mmap(int fd, void *addr){
+  struct file *old_f = get_file(fd);
+  if(!old_f || !is_user_vaddr(addr) || addr < USER_VADDR_BOTTOM || ((uint32_t) addr % PGSIZE) != 0) return ERROR;
+
+  struct file *file = file_reopen(old_f);
+  if(!file || file_length(old_f) == 0) return ERROR;
+
+  thread_current()->mapid++;
+  int32_t offset = 0;
+  uint32_t read_count = file_length(file);
+
+  while(read_count > 0){
+    uint32_t page_read_count = read_count < PGSIZE ? read_count : PGSIZE;
+    uint32_t page_zero_count = PGSIZE - page_read_count;
+
+    if(!add_mmap_to_table(file, offset, addr, page_read_count, page_zero_count)){
+      munmap(thread_current()->mapid);
+      return ERROR;
+    }
+
+    read_count -= page_read_count;
+    offset += page_read_count;
+    addr += PGSIZE;
+  }
+
+  return thread_current()->mapid;
+}
+
+void munmap(int mapping){
+  process_remove_mmap(mapping);
 }
 
 void check_valid_string(const void* str, void* esp){

@@ -78,8 +78,13 @@ void* evict_frame(enum palloc_flags flags){
       else{
         if(pagedir_is_dirty(t->pagedir, f->sp->data_to_fetch) ||
           f->sp->type == SWAP){
-            f->sp->type = SWAP;
-            f->sp->swap_mode = swap_out(f->frame);
+            if(f->sp->type == MMAP){
+              file_write_at(f->sp->file, f->sp->data_to_fetch, f->sp->read_count, f->sp->offset);
+            }
+            else{
+              f->sp->type = SWAP;
+              f->sp->swap_mode = swap_out(f->frame);
+            }
         }
 
         f->sp->valid_access = false;

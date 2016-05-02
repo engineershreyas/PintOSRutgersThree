@@ -16,6 +16,9 @@ void process_activate (void);
 struct process *get_child (pid_t pid);
 bool install_page (void *upage, void *kpage, bool writable);
 
+bool process_add_mmap (struct sup_page_entry *spte);
+void process_remove_mmap (int mapping);
+
 /* Definitions of sizes in argument page for args and argv. */
 #define ARGS_SIZE PGSIZE / 2                                                       /* File_name+Arguments size. */
 #define ARGV_SIZE (PGSIZE - ARGS_SIZE - sizeof (unsigned)) / sizeof (char *)       /* Maximum argument count number. */
@@ -40,6 +43,11 @@ struct file_descriptor
     struct list_elem elem;  /* Element for list file lists. */
   };
 
-
+/*data structure for mmap*/
+struct mmap {
+  struct spage *sp;
+  int id;
+  struct list_elem elem;
+}
 
 #endif /* userprog/process.h */

@@ -7,6 +7,8 @@
 
 #define FILE 0
 #define SWAP 1
+#define MMAP 2
+#define HASH_ERROR 3
 
 #define STACK_MAX (1 << 23)
 
@@ -40,7 +42,9 @@ bool page_load (struct spage *sp);
 bool swap_load (struct spage *sp);
 bool file_load (struct spage *sp);
 
+
 bool add_file_to_table (struct file *file, int32_t offset, uint8_t *upage, uint32_t read_count, uint32_t zero_count, bool can_write);
+bool add_mmap_to_table(struct file *file, int32_t offset, uint8_t *upage, uint32_t read_count, uint32_t zero_count);
 bool stack_grow (void *data_to_fetch);
 
 struct spage* get_sp (void *addr);

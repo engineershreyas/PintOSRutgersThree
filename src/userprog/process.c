@@ -184,6 +184,7 @@ process_exit (void)
       free (file_d);
     }
 
+    process_remove_mmap(CLOSE_ALL);
     spage_table_destroy(&cur->supp_page_table);
 
   /* Destroy the current process's page directory and switch back
@@ -659,4 +660,59 @@ install_page (void *upage, void *kpage, bool writable)
      address, then map our page there. */
   return (pagedir_get_page (t->pagedir, upage) == NULL
           && pagedir_set_page (t->pagedir, upage, kpage, writable));
+}
+
+bool process_add_mmap (struct spage *sp){
+  struct mmap *mm = malloc(sizeof(struct mmap));
+  if(!mm) return false;
+
+  mm->sp = sp;
+  mm->id = thread_current()->mapid;
+  list_push_back(&thread_current()->mmap_list, &mm->elem);
+  return true;
+}
+
+void process_remove_mmap (int mapping){
+  struct thread *t = thread_current();
+  struct list_elem *next,*e = list_begin(&t->mmap_list);
+  struct file *f = NULL;
+  int close = 0;
+
+  while (e != list_end(&t->mmap_list)){
+    next = list_next(e);
+    struct mmap *mm = list_entry(e, struct mmap, elem);
+    if(mm->id = maping || mapping == CLOSE_ALL){
+      mm->sp->sticky = true;
+      if(mm->sp->valid_access){
+        if(pagedir_is_dirty(t->pagedir, mm->sp->data_to_fetch)){
+          lock_acquire(&file_lock);
+          file_write_at(mm->sp->file, mm->sp->data_to_fetch,mm->sp->read_count,mm->sp->offset);
+          lock_release(&file_lock);
+        }
+
+        free_frame((pagedir_get_page(t->pagedir,mm->sp->data_to_fetch)));
+        pagedir_clear_page((t->pagedir,mm->sp->data_to_fetch));
+      }
+      if(mm->sp->type != HASH_ERROR) hash_delete(&t->supp_page_table->h_elem);
+
+      list_remove(&mm->elem);
+      if(mm->id != close){
+        if(f){
+          lock_acquire(&file_lock);
+          file_close(f);
+          lock_release(&file_lock);
+        }
+        close = mm->id;
+        f = mm->sp->file;
+      }
+      free(mm->sp);
+      free(mm);
+    }
+    e = next;
+  }
+  id(f){
+    lock_acquire(&file_lock);
+    file_close(f);
+    lock_release(&file_lock);
+  }
 }

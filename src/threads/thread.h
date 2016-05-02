@@ -137,6 +137,9 @@ struct thread
     unsigned magic;                     /* Detects stack overflow. */
 
     struct hash supp_page_table; /*supplemental page table*/
+
+    struct list mmap_list;
+    int mapid;
   };
 
 /* If false (default), use round-robin scheduler.
