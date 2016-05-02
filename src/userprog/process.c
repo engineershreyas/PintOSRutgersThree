@@ -102,7 +102,7 @@ start_process (void *args_)
   bool success = false;
   struct process *p;
 
-  spage_tabe_init(&thread_current()->supp_page_table);
+  spage_table_init(&thread_current()->supp_page_table);
 
   /* Initialize interrupt frame and load executable. */
   memset (&if_, 0, sizeof if_);
