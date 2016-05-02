@@ -10,6 +10,8 @@
 #include <list.h>
 #include "threads/malloc.h"
 #include "devices/shutdown.h"
+#include "vm/spage.h"
+#include "vm/frame.h"
 
 #define ARG0 (*(esp + 1))
 #define ARG1 (*(esp + 2))
