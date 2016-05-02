@@ -317,7 +317,7 @@ struct spage* check_valid_ptr(const void *vaddr, void* esp)
  struct spage *sp = get_sp((void *) vaddr);
  if (sp)
    {
-     load_page(sp);
+     page_load(sp);
      load = sp->valid_access;
    }
  else if (vaddr >= esp - STACK_HEURISTIC)
