@@ -11,5 +11,9 @@
 struct lock file_lock;
 
 void syscall_init (void);
+struct spage* check_valid_ptr(const void *vaddr, void* esp);
+void check_valid_buffer (void* buffer, unsigned size, void* esp,
+			 bool to_write);
+void check_valid_string (const void* str, void* esp);
 
 #endif /* userprog/syscall.h */
