@@ -547,7 +547,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
 
-      if(!add_file_to_page_table(file,ofs,upage,page_read_bytes,page_zero_bytes,writable)) return false;
+      if(!add_file_to_table(file,ofs,upage,page_read_bytes,page_zero_bytes,writable)) return false;
 
       /* Advance. */
       read_bytes -= page_read_bytes;
@@ -564,7 +564,7 @@ static bool
 setup_stack (struct args_struct *args_struct_ptr,void **esp)
 {
 
-  bool success = grow_stack(((uint8_t *) PHYS_BASE) - PGSIZE);
+  bool success = stack_grow(((uint8_t *) PHYS_BASE) - PGSIZE);
   if(success) *esp = PHYS_BASE;
   else{
     return success;
