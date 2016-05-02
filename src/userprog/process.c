@@ -7,6 +7,7 @@
 #include <string.h>
 #include "userprog/gdt.h"
 #include "userprog/pagedir.h"
+#include "userprog/syscall.h"
 #include "userprog/tss.h"
 #include "filesys/directory.h"
 #include "filesys/file.h"
@@ -681,7 +682,7 @@ void process_remove_mmap (int mapping){
   while (e != list_end(&t->mmap_list)){
     next = list_next(e);
     struct mmap *mm = list_entry(e, struct mmap, elem);
-    if(mm->id = maping || mapping == CLOSE_ALL){
+    if(mm->id = mapping || mapping == CLOSE_ALL){
       mm->sp->sticky = true;
       if(mm->sp->valid_access){
         if(pagedir_is_dirty(t->pagedir, mm->sp->data_to_fetch)){
@@ -691,9 +692,9 @@ void process_remove_mmap (int mapping){
         }
 
         free_frame((pagedir_get_page(t->pagedir,mm->sp->data_to_fetch)));
-        pagedir_clear_page((t->pagedir,mm->sp->data_to_fetch));
+        pagedir_clear_page(t->pagedir,mm->sp->data_to_fetch);
       }
-      if(mm->sp->type != HASH_ERROR) hash_delete(&t->supp_page_table->h_elem);
+      if(mm->sp->type != HASH_ERROR) hash_delete(&t->supp_page_table,&mm->sp->h_elem);
 
       list_remove(&mm->elem);
       if(mm->id != close){

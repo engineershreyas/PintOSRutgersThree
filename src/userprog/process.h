@@ -16,7 +16,7 @@ void process_activate (void);
 struct process *get_child (pid_t pid);
 bool install_page (void *upage, void *kpage, bool writable);
 
-bool process_add_mmap (struct sup_page_entry *spte);
+bool process_add_mmap (struct spage *sp);
 void process_remove_mmap (int mapping);
 
 /* Definitions of sizes in argument page for args and argv. */
