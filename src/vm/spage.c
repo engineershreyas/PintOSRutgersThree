@@ -19,7 +19,7 @@
 
 static unsigned spage_hash (const struct hash_elem *e, void *aux UNUSED){
   struct spage *sp = hash_entry(e, struct spage, h_elem);
-  return hash_init((int) sp->data_to_fetch);
+  return hash_int((int) sp->data_to_fetch);
 }
 
 static bool spage_check_less (const struct hash_elem *a, const struct hash_elem *b, void *aux UNUSED){
@@ -54,10 +54,10 @@ struct spage* get_sp(void *addr){
   struct spage sp;
   sp.data_to_fetch = pg_round_down(addr);
 
-  struct hash_elem *e = hash_find(&thread_current->supp_page_table, &sp.h_elem);
+  struct hash_elem *e = hash_find(&thread_current()->supp_page_table, &sp.h_elem);
   if(e == NULL) return NULL;
 
-  return hash_entry(e, struct spage, h_elem);s
+  return hash_entry(e, struct spage, h_elem);
 }
 
 bool page_load (struct spage *sp){
@@ -98,7 +98,7 @@ bool swap_load(struct spage *sp){
 
 bool file_load(struct spage *sp){
   enum palloc_flags flags = PAL_USER;
-  if(sp->read_count == 0) flags |= PAL_ZER0;
+  if(sp->read_count == 0) flags |= PAL_ZERO;
 
   uint8_t *frame = allocate_frame(flags, sp);
   if(frame == NULL) return false;
@@ -142,11 +142,11 @@ bool add_file_to_table (struct file *file, int32_t offset, uint8_t *upage, uint3
   sp->type = FILE;
   sp->sticky = false;
 
-  return (hash_insert(&thread_current()->supp_page_table, &sp->elem) == NULL);
+  return (hash_insert(&thread_current()->supp_page_table, &sp->h_elem) == NULL);
 }
 
 bool stack_grow(void *data_to_fetch){
-  if((size_t) (PHYS_BASE - pg_round_down(data_to_fetch) > STACK_MAX) return false;
+  if((size_t) (PHYS_BASE - pg_round_down(data_to_fetch) > STACK_MAX)) return false;
 
   struct spage *sp = malloc(sizeof(struct spage));
   if(sp == NULL) return false;

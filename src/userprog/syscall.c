@@ -18,12 +18,12 @@
 #define ARG4 (*(esp + 5))
 #define ARG5 (*(esp + 6))
 
-struct lock file_lock;
+
 
 static void syscall_handler (struct intr_frame *);
 
 void
-syscall_init (void) 
+syscall_init (void)
 {
   lock_init(&file_lock);
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
@@ -37,8 +37,8 @@ struct file *get_file(int fd)
   for (e = list_tail (&cur->files); e != list_head (&cur->files); e = list_prev (e))
     {
       file_d = list_entry (e, struct file_descriptor, elem);
-      if (file_d->fd == fd) 
-        return file_d->file;   
+      if (file_d->fd == fd)
+        return file_d->file;
     }
   return NULL;
 }
@@ -47,16 +47,16 @@ bool not_valid(const void *pointer)
 {
   return (!is_user_vaddr(pointer) || pointer == NULL || pagedir_get_page (thread_current ()->pagedir, pointer) == NULL);
 }
-void 
+void
 halt (void)
 {
   shutdown_power_off();
 }
 
 
-void 
+void
 exit (int status)
-{	
+{
   thread_current ()->proc->exit = status;
   thread_exit ();
 }
@@ -65,10 +65,10 @@ pid_t exec (const char *cmd_line)
 {
   if (not_valid(cmd_line))
     exit (-1);
-  return process_execute(cmd_line); 
+  return process_execute(cmd_line);
 }
 
-int 
+int
 wait (pid_t pid)
 {
   return process_wait (pid);
@@ -107,7 +107,7 @@ remove (const char *file)
   return result;
 }
 
-int 
+int
 open (const char *file)
 {
   if (not_valid(file))
@@ -140,7 +140,7 @@ filesize (int fd)
   return result;
 }
 
-int 
+int
 read (int fd, void *buffer, unsigned size)
 {
   if (not_valid(buffer) || not_valid(buffer+size) || fd == STDOUT_FILENO)
@@ -156,7 +156,7 @@ read (int fd, void *buffer, unsigned size)
         }
       result = size;
     }
-  else 
+  else
     {
       struct file *file = get_file(fd);
       result = file ? file_read(file, buffer, size) : -1;
@@ -165,7 +165,7 @@ read (int fd, void *buffer, unsigned size)
   return result;
 }
 
-int 
+int
 write (int fd, const void *buffer, unsigned size)
 {
   if (not_valid(buffer) || not_valid(buffer+size) || fd == STDIN_FILENO)
@@ -177,16 +177,16 @@ write (int fd, const void *buffer, unsigned size)
       putbuf (buffer, size);
       result = size;
     }
-  else 
+  else
     {
       struct file *file = get_file(fd);
       result = file? file_write(file, buffer, size) : -1;
     }
-  lock_release(&file_lock); 
+  lock_release(&file_lock);
   return result;
 }
 
-void 
+void
 seek (int fd, unsigned position)
 {
   lock_acquire(&file_lock);
@@ -197,22 +197,22 @@ seek (int fd, unsigned position)
   lock_release(&file_lock);
 }
 
-unsigned 
+unsigned
 tell (int fd)
 {
   lock_acquire(&file_lock);
   struct file *file = get_file(fd);
-  int result = file ? file_tell(file) : 0;  
+  int result = file ? file_tell(file) : 0;
   lock_release(&file_lock);
   return result;
 }
 
-void 
+void
 close (int fd)
 {
   lock_acquire(&file_lock);
   struct list_elem *e;
-  struct file_descriptor *file_d;  
+  struct file_descriptor *file_d;
   struct thread *cur;
   cur = thread_current ();
   // would fail if go backward
@@ -224,15 +224,15 @@ close (int fd)
     {
       file_close (file_d->file);
       list_remove (&file_d->elem);
-      free (file_d); 
-      break;   
+      free (file_d);
+      break;
     }
   }
   lock_release(&file_lock);
 }
 
 static void
-syscall_handler (struct intr_frame *f) 
+syscall_handler (struct intr_frame *f)
 {
   uint32_t *esp = f->esp;
   if (not_valid(esp))
@@ -284,5 +284,3 @@ syscall_handler (struct intr_frame *f)
         thread_exit();
     }
 }
-
-
