@@ -13,6 +13,8 @@
 #include "vm/spage.h"
 #include "vm/frame.h"
 
+#define ERROR -1
+
 #define ARG0 (*(esp + 1))
 #define ARG1 (*(esp + 2))
 #define ARG2 (*(esp + 3))
