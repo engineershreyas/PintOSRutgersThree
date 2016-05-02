@@ -125,7 +125,7 @@ bool swap_load(struct spage *sp){
 		return false;
 	}
 
-	//swap
+	swap_in(sp->swap_mode,sp->data_to_fetch);
 	sp->valid_access = true;
 	return true;
 }

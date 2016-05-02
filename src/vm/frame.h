@@ -47,6 +47,8 @@ void add_to_frame_table(void *frame, struct spage *sp);
 //methods to allocate and free a frame
 void* allocate_frame(enum palloc_flags flags, struct spage *sp);
 void free_frame(void *frame);
+
+void* evict_frame (enum palloc_flags flags);
 /* end custom functions */
 
 #endif

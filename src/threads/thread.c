@@ -12,6 +12,7 @@
 #include "threads/synch.h"
 #include "threads/vaddr.h"
 #include "vm/frame.h"
+#include "vm/swap.h"
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
@@ -101,6 +102,7 @@ thread_init (void)
   initial_thread->tid = allocate_tid ();
 
   frame_table_init();
+  swap_init();
 }
 
 /* Starts preemptive thread scheduling by enabling interrupts.

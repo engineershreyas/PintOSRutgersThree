@@ -128,6 +128,45 @@ void add_to_frame_table(void *frame, struct spage *sp){
 
 }
 
+void* evict_frame (enum palloc_flags flags)
+{
+  lock_acquire(&frame_table_access);
+  struct list_elem *e = list_begin(&frame_table);
+
+  while (true)
+    {
+      struct frame *f = list_entry(e, struct frame_entry, elem);
+      if (!f->sp->sticky)
+	       {
+	          struct thread *t = f->owner_thread;
+	           if (pagedir_is_accessed(t->pagedir, f->sp->data_to_fetch))
+	            {
+	               pagedir_set_accessed(t->pagedir, f->sp->data_to_fetch, false);
+	              }
+	           else
+	            {
+	               if (pagedir_is_dirty(t->pagedir, f->sp->data_to_fetch) ||
+		               f->sp->type == SWAP)
+		                 {
+		                      fte->spte->type = SWAP;
+		                      fte->spte->swap_index = swap_out(fte->frame);
+
+		                }
+	              f->sp->valid_access = false;
+	              list_remove(&f->elem);
+	              pagedir_clear_page(t->pagedir, f->sp->data_to_fetch);
+	              palloc_free_page(f->frame;
+	              free(f);
+	              return palloc_get_page(flags);
+	             }
+	        }
+          e = list_next(e);
+          if (e == list_end(&frame_table))
+	       {
+	            e = list_begin(&frame_table);
+	        }
+    }
+}
 
 
 /*end custom function */
