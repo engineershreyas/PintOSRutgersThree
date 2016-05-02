@@ -239,7 +239,7 @@ static void
 syscall_handler (struct intr_frame *f)
 {
   uint32_t *esp = f->esp;
-  check_valid_ptr((const void*)esp,f->esp);
+  check_valid_ptr((const void*)esp,(void *)f->esp);
 
   switch (* (int *)esp)
     {
