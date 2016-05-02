@@ -711,7 +711,7 @@ void process_remove_mmap (int mapping){
     }
     e = next;
   }
-  id(f){
+  if(f){
     lock_acquire(&file_lock);
     file_close(f);
     lock_release(&file_lock);
