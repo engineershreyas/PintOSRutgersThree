@@ -49,6 +49,6 @@ struct mmap {
   struct spage *sp;
   int id;
   struct list_elem elem;
-}
+};
 
 #endif /* userprog/process.h */
