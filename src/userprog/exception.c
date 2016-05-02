@@ -156,7 +156,7 @@ page_fault (struct intr_frame *f)
   if(not_present && fault_addr > USER_VADDR_BOTTOM && is_user_vaddr(fault_addr)){
     struct spage *sp = get_sp(fault_addr);
     if(sp){
-      load = load_page(sp);
+      load = page_load(sp);
       sp->sticky = false;
     }
     else if(fault_addr >= f->esp - STACK_HEURISTIC) load = stack_grow(fault_addr);
