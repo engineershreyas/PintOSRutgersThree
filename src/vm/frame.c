@@ -148,14 +148,14 @@ void* evict_frame (enum palloc_flags flags)
 	               if (pagedir_is_dirty(t->pagedir, f->sp->data_to_fetch) ||
 		               f->sp->type == SWAP)
 		                 {
-		                      fte->spte->type = SWAP;
-		                      fte->spte->swap_index = swap_out(fte->frame);
+		                      f->sp->type = SWAP;
+		                      f->sp->swap_mode = swap_out(f->frame);
 
 		                }
 	              f->sp->valid_access = false;
 	              list_remove(&f->elem);
 	              pagedir_clear_page(t->pagedir, f->sp->data_to_fetch);
-	              palloc_free_page(f->frame;
+	              palloc_free_page(f->frame);
 	              free(f);
 	              return palloc_get_page(flags);
 	             }

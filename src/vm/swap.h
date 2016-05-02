@@ -21,4 +21,5 @@ void swap_init (void);
 size_t swap_out (void *frame);
 void swap_in (size_t used_index, void* frame);
 
+
 #endif /* vm/swap.h */
