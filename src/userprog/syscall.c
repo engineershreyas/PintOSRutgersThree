@@ -239,7 +239,7 @@ static void
 syscall_handler (struct intr_frame *f)
 {
   uint32_t *esp = f->esp;
-  check_valid_ptr((const void*)esp,esp);
+  check_valid_ptr((const void*)esp,f->esp);
 
   switch (* (int *)esp)
     {
@@ -251,8 +251,8 @@ syscall_handler (struct intr_frame *f)
         exit ((int) ARG0);
         break;
       case SYS_EXEC:
-        get_arg(f,&ARG0, 1)
-        check_valid_string((const void *)ARG0,esp);
+        get_arg(f,&ARG0, 1);
+        check_valid_string((const void *)ARG0,f->esp);
         f->eax = exec ((const char *) ARG0);
         break;
       case SYS_WAIT:
@@ -261,17 +261,17 @@ syscall_handler (struct intr_frame *f)
         break;
       case SYS_CREATE:
         get_arg(f, &ARG0, 2);
-        check_valid_string((const void *) ARG0, esp);
+        check_valid_string((const void *) ARG0, f->esp);
         f->eax = create ((const char *) ARG0, (unsigned) ARG1);
         break;
       case SYS_REMOVE:
         get_arg(f, &ARG0, 1);
-        check_valid_string((const void *) arg[0], esp);
+        check_valid_string((const void *) ARG0, f->esp);
         f->eax = remove ((const char *) ARG0);
         break;
       case SYS_OPEN:
         get_arg(f, &ARG0, 1);
-        check_valid_string((const void *)ARG0, esp);
+        check_valid_string((const void *)ARG0, f->esp);
         f->eax = open ((const char *) ARG0);
         break;
       case SYS_FILESIZE:
@@ -280,12 +280,12 @@ syscall_handler (struct intr_frame *f)
         break;
       case SYS_READ:
         get_arg(f, &ARG0, 3);
-        check_valid_buffer((void *) ARG1, (unsigned) ARG2,esp,true);
+        check_valid_buffer((void *) ARG1, (unsigned) ARG2,f->esp,true);
         f->eax = read ((int) ARG0, (void *) ARG1, (unsigned) ARG2);
         break;
       case SYS_WRITE:
         get_arg(f, &ARG0, 3);
-        check_valid_buffer((void *) ARG1, (unsigned) ARG2,esp,false);
+        check_valid_buffer((void *) ARG1, (unsigned) ARG2,f->esp,false);
         f->eax = write ((int) ARG0, (void *) ARG1, (unsigned) ARG2);
         break;
       case SYS_SEEK:
