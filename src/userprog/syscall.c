@@ -248,7 +248,7 @@ close (int fd)
 }
 
 static void
-syscall_handler (struct intr_frame *f)
+syscall_handler (struct intr_frame *f UNUSED)
 {
   uint32_t *esp = f->esp;
   check_valid_ptr((const void*)f->esp, f->esp);
