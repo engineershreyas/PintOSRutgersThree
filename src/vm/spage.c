@@ -177,6 +177,27 @@ struct spage* get_sp(void *addr){
 
 }
 
+bool add_file_to_page_table (struct file *file, int32_t ofs, uint8_t *upage,
+			     uint32_t read_bytes, uint32_t zero_bytes,
+			     bool writable)
+{
+  struct spage *sp = malloc(sizeof(struct spage));
+  if (!sp)
+    {
+      return false;
+    }
+  sp->file = file;
+  sp->offset = ofs;
+  sp->data_to_fetch = upage;
+  sp->read_count = read_bytes;
+  sp->zero_count = zero_bytes;
+  sp->read_only = !writable;
+  sp->valid_access = false;
+  sp->type = FILE;
+
+  return (hash_insert(&thread_current()->supp_page_table, &sp->h_elem) == NULL);
+}
+
 
 bool stack_grow (void *data){
 

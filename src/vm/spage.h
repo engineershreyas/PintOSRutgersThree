@@ -60,6 +60,9 @@ bool stack_grow(void *data);
 bool page_load(struct spage *sp);
 bool swap_load(struct spage *sp);
 bool file_load(struct spage *sp);
+bool add_file_to_page_table (struct file *file, int32_t ofs, uint8_t *upage,
+ 			     uint32_t read_bytes, uint32_t zero_bytes,
+			     bool writable);
 struct spage* get_sp (void *addr);
 
 
