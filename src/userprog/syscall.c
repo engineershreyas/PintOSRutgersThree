@@ -275,7 +275,7 @@ syscall_handler (struct intr_frame *f)
         get_arg(f, &ARG0, 2);
         check_valid_string((const void *)ARG0, f->esp);
         f->eax = create ((const char *) ARG0, (unsigned) ARG1);
-        unpin_string((voud *)ARG0);
+        unpin_string((void *)ARG0);
         break;
       case SYS_REMOVE:
         get_arg(f, &ARG0, 1);
@@ -383,7 +383,7 @@ void unpin_ptr(void* vaddr){
   if(sp != NULL) sp->sticky = false;
 }
 
-void unpin string (void* str){
+void unpin_string (void* str){
   unpin_ptr(str);
   while (* (char *) str != 0){
     str = (char *) str + 1;
