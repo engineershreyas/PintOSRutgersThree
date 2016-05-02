@@ -65,7 +65,7 @@ bool page_load (struct spage *sp){
   sp->sticky = true;
   if(sp->valid_access) return false;
 
-  swict(sp->type){
+  switch(sp->type){
     case FILE:
       success = file_load(sp);
       break
