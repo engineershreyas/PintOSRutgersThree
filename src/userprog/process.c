@@ -631,14 +631,14 @@ void process_close_file (int fd)
     }
 }
 
-bool process_add_mmap (struct spage *spte)
+bool process_add_mmap (struct spage *sp)
 {
   struct mmap_file *mm = malloc(sizeof(struct mmap_file));
   if (!mm)
     {
       return false;
     }
-  mm->spte = spte;
+  mm->sp = sp;
   mm->mapid = thread_current()->mapid;
   list_push_back(&thread_current()->mmap_list, &mm->elem);
   return true;
@@ -657,22 +657,22 @@ void process_remove_mmap (int mapping)
       struct mmap_file *mm = list_entry (e, struct mmap_file, elem);
       if (mm->mapid == mapping || mapping == CLOSE_ALL)
 	{
-	  mm->spte->pinned = true;
-	  if (mm->spte->is_loaded)
+	  mm->sp->sticky = true;
+	  if (mm->sp->valid_access)
 	    {
-	      if (pagedir_is_dirty(t->pagedir, mm->spte->data_to_fetch))
+	      if (pagedir_is_dirty(t->pagedir, mm->sp->data_to_fetch))
 		{
 		  lock_acquire(&filesys_lock);
-		  file_write_at(mm->spte->file, mm->spte->data_to_fetch,
-				mm->spte->read_bytes, mm->spte->offset);
+		  file_write_at(mm->sp->file, mm->sp->data_to_fetch,
+				mm->sp->read_bytes, mm->sp->offset);
 		  lock_release(&filesys_lock);
 		}
-	      free_frame(pagedir_get_page(t->pagedir, mm->spte->data_to_fetch));
-	      pagedir_clear_page(t->pagedir, mm->spte->data_to_fetch);
+	      free_frame(pagedir_get_page(t->pagedir, mm->sp->data_to_fetch));
+	      pagedir_clear_page(t->pagedir, mm->sp->data_to_fetch);
 	    }
-	  if (mm->spte->type != HASH_ERROR)
+	  if (mm->sp->type != HASH_ERROR)
 	    {
-	      hash_delete(&t->spt, &mm->spte->elem);
+	      hash_delete(&t->spt, &mm->sp->elem);
 	    }
 	  list_remove(&mm->elem);
 	  if (mm->mapid != close)
@@ -684,9 +684,9 @@ void process_remove_mmap (int mapping)
 		  lock_release(&filesys_lock);
 		}
 	      close = mm->mapid;
-	      f = mm->spte->file;
+	      f = mm->sp->file;
 	    }
-	  free(mm->spte);
+	  free(mm->sp);
 	  free(mm);
 	}
       e = next;

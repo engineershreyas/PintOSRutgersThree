@@ -24,7 +24,7 @@ struct spage* check_valid_ptr (const void *vaddr, void* esp);
 void check_valid_buffer (void* buffer, unsigned size, void* esp,
 			 bool to_write);
 void check_valid_string (const void* str, void* esp);
-void check_write_permission (struct spage *spte);
+void check_write_permission (struct spage *sp);
 void unpin_ptr (void* vaddr);
 void unpin_string (void* str);
 void unpin_buffer (void* buffer, unsigned size);
@@ -350,9 +350,9 @@ void close (int fd)
   lock_release(&filesys_lock);
 }
 
-void check_write_permission (struct spage *spte)
+void check_write_permission (struct spage *sp)
 {
-  if (!spte->can_write)
+  if (!sp->can_write)
     {
       exit(ERROR);
     }
@@ -365,11 +365,11 @@ struct spage* check_valid_ptr(const void *vaddr, void* esp)
       exit(ERROR);
     }
   bool load = false;
-  struct spage *spte = get_sp((void *) vaddr);
-  if (spte)
+  struct spage *sp = get_sp((void *) vaddr);
+  if (sp)
     {
-      page_load(spte);
-      load = spte->is_loaded;
+      page_load(sp);
+      load = sp->valid_access;
     }
   else if (vaddr >= esp - STACK_HEURISTIC)
     {
@@ -379,7 +379,7 @@ struct spage* check_valid_ptr(const void *vaddr, void* esp)
     {
       exit(ERROR);
     }
-  return spte;
+  return sp;
 }
 
 struct child_process* add_child_process (int pid)
@@ -458,11 +458,11 @@ void check_valid_buffer (void* buffer, unsigned size, void* esp,
   char* local_buffer = (char *) buffer;
   for (i = 0; i < size; i++)
     {
-      struct spage *spte = check_valid_ptr((const void*)
+      struct spage *sp = check_valid_ptr((const void*)
 						    local_buffer, esp);
-      if (spte && to_write)
+      if (sp && to_write)
 	{
-	  if (!spte->can_write)
+	  if (!sp->can_write)
 	    {
 	      exit(ERROR);
 	    }
@@ -483,10 +483,10 @@ void check_valid_string (const void* str, void* esp)
 
 void unpin_ptr (void* vaddr)
 {
-  struct spage *spte = get_sp(vaddr);
-  if (spte)
+  struct spage *sp = get_sp(vaddr);
+  if (sp)
     {
-      spte->pinned = false;
+      sp->sticky = false;
     }
 }
 

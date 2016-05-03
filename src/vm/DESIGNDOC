@@ -44,10 +44,10 @@ struct spage {  // Member of a thread's supplemental page table
   void *data_to_fetch;  // The user virtual address of physical memory page
   bool can_write;  // Whether the physical page is can_write or not
 
-  bool is_loaded;  // Indicates whether the entry has been loaded into
+  bool valid_access;  // Indicates whether the entry has been loaded into
                    // physical memory (or has been swapped out or written
                    // to a file)
-  bool pinned;  // Pinned is set to true if kernel code is currently
+  bool sticky;  // sticky is set to true if kernel code is currently
                 // accessing the page table entry (and false otherwise)
 
   // For files (if type == FILE or MMAP)
@@ -74,7 +74,7 @@ struct list frame_table;  // The global frame table which indicates
 
 struct frame_entry {  // An entry in the frame table
   void *frame;  // Pointer to the physical memory frame
-  struct spage *spte;  // Pointer to the supplemental page table
+  struct spage *sp;  // Pointer to the supplemental page table
                                 // entry currently using the physical frame
   struct thread *thread;  // The thread using the memory frame
   struct list_elem elem;  // List element for the frame table list
@@ -89,7 +89,7 @@ Suppose a page fault occurs and the user program needs a valid user
 virtual address (not a stack address for simplicity of explanation)
 1) The supplemental page table entry is looked up via the user virtual
 address. The user virtual address is rounded down to its corresponding
-memory page and is hashed to find the spte.
+memory page and is hashed to find the sp.
 2) Now a frame must be allocated for the supplemental page table
 entry. allocate_frame is called, which either gets a new frame if one is
 available or evicts a frame if one is not available.
@@ -99,7 +99,7 @@ using the install_page function in process.c.
 in from the file (with the corresponding offset and number of read
 bytes). If the user virtual address is from swap, the data is read in from
 the swap partition.
-5) The supplemental page table entry is_loaded flag is set to true.
+5) The supplemental page table entry valid_access flag is set to true.
 
 Now, when the user program re-executes the faulting instruction, the user
 virtual address should map correctly to the memory just allocated.
@@ -143,20 +143,20 @@ done sequentially since both require the frame table lock.
 
 Most variables are fairly self-explanatory. However, I would like to
 discuss a few key variables:
-1) spte in frame_entry - This is important since while evicting a frame, the
-kernel must set the spte's is_loaded flag to false and must invalidate the
+1) sp in frame_entry - This is important since while evicting a frame, the
+kernel must set the sp's valid_access flag to false and must invalidate the
 user virtual address for the given frame's thread.
 2) thread in frame_entry - This is needed since threads must invalidate
 other threads' virtual addresses. This requires some synchronization
 effort.
-3) pinned in spage - This is set to true whenever the kernel is
-accessing the data in the spte. Thus, this means whenever kernel threads
+3) sticky in spage - This is set to true whenever the kernel is
+accessing the data in the sp. Thus, this means whenever kernel threads
 are accessing a frame, it cannot be evicted. This is key in preventing
 kernel crashes.
 4) data_to_fetch in spage - As discussed before, this is used so the kernel
 only accesses data with the user virtual address, preventing alias
 problems with the access and dirty bits.
-5) is_loaded in spage - Indicates whether a spte is already in
+5) valid_access in spage - Indicates whether a sp is already in
 memory. This is especially important in syscalls, to test that the user
 page is already loaded (in order not to fault in the kernel).
 
@@ -169,7 +169,7 @@ page is already loaded (in order not to fault in the kernel).
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
-As described in the earlier section, the frame_entry struct has the spte
+As described in the earlier section, the frame_entry struct has the sp
 and thread variables, which are crucial in paging.
 
 In vm/swap.h:
@@ -189,7 +189,7 @@ struct bitmap *swap_map;  // The bitmap used for indicating if a page is
 >> evicted.  Describe your code for choosing a frame to evict.
 
 Iterating through the frame list (but ignoring entries which are currently
-pinned):
+sticky):
 1) If a frame has the accessed bit set to true, the accessed bit is set to
 false.
 2) Otherwise, the accessed bit is false and the page will be swapped out.
@@ -199,7 +199,7 @@ entry) or its swapped out to disk.
 3) When swapping out to disk, the swap map is scanned for free sectors. If
 none are available, the kernel panics. But if some are available, the page
 is written to the corresponding sectors and the page's swap index is set.
-4) Now, the page's is_loaded flag is set to false and the user virtual
+4) Now, the page's valid_access flag is set to false and the user virtual
 address is invalidated from the physical frame. The frame is removed from
 the frame list and memory is freed.
 5) palloc_get_page() is returned.
@@ -220,8 +220,8 @@ implement some fair-sharing frame allocating algorithm.
 
 Since the frame is freed in the frame eviction and a completely new one is
 allocated, there is no remnants of the old frame. In the new frame, the
-thread is set to the current thread adding the frame and the spte is set
-to the spte the current thread is using the frame for. However, as stated
+thread is set to the current thread adding the frame and the sp is set
+to the sp the current thread is using the frame for. However, as stated
 above, due to this deallocation and re-allocation, not only is it
 inefficient, but it could also have fairness reprucussions.
 
@@ -229,7 +229,7 @@ inefficient, but it could also have fairness reprucussions.
 >> invalid virtual address should cause the stack to be extended into
 >> the page that faulted.
 
-If an spte entry is not found in the current thread's supplemental page
+If an sp entry is not found in the current thread's supplemental page
 table, then the virtual address could be a stack access.
 
 Since the PUSHA instruction could cause an access to be 32 bytes below the
@@ -246,29 +246,29 @@ the user program is killed.
 >> deadlock.)
 
 Whenever a supplemental page table entry's user virtual address is
-accessed via a page fault or syscall, the spte's pinned flag is set to
-true. The frame eviction algorithm ignores entries with a true pinned flag,
+accessed via a page fault or syscall, the sp's sticky flag is set to
+true. The frame eviction algorithm ignores entries with a true sticky flag,
 so it won't evict them. Then, when the kernel is done accessing the user
-data, it sets the pinned flag back to false.
+data, it sets the sticky flag back to false.
 
 >> B6: A page fault in process P can cause another process Q's frame
 >> to be evicted.  How do you ensure that Q cannot access or modify
 >> the page during the eviction process?  How do you avoid a race
 >> between P evicting Q's frame and Q faulting the page back in?
 
-While in page fault and syscalls, the process Q sets the spte's pinned
+While in page fault and syscalls, the process Q sets the sp's sticky
 flag of the user memory it is accessing or modifying to true. Thus, when P
 is iterating through the frame table, it will ignore Q's frame until Q
-exits the page fault or syscall (where it will set the pinned flag to
+exits the page fault or syscall (where it will set the sticky flag to
 false). Then, when process P is trying to evict the frame, it sets the
-is_loaded flag to false, so Q must reload the page when trying to fault
+valid_access flag to false, so Q must reload the page when trying to fault
 the page back in.
 
 Note that race conditions i.e. evicting a frame while the kernel is
 accessing the frame's data is avoided using page faults. For example, a
 process P evicts Q's frame while Q's kernel thread is reading the frame's
 data (this is possible via a certain interleaving of instructions). Then,
-Q's kernel thread page faults and simply gets the spte and reads the frame
+Q's kernel thread page faults and simply gets the sp and reads the frame
 back in (page fault is written in such a way to allow for the kernel to do
 this). Note that it may have to evict a frame, which may cause a page
 fault on another process R reading data from the frame. This could cause
@@ -280,9 +280,9 @@ has shown to work much better than using locks.
 >> cannot interfere by e.g. attempting to evict the frame while it is
 >> still being read in?
 
-Again, while process P is loading the page, its spte is pinned. Thus, when
+Again, while process P is loading the page, its sp is sticky. Thus, when
 Q is running through the frame table, it cannot evict the frame since it
-has been pinned.
+has been sticky.
 
 However, if Q starts to evict the frame and then P pins it and starts to
 load it, then Q will evict the frame and P will page fault on that
@@ -297,7 +297,7 @@ kernel contexts allows us to avoid the complexity of locking.
 >> gracefully handle attempted accesses to invalid virtual addresses?
 
 During system calls, we manually load in pages that have not been loaded
-in and lock the pages using the pinned flag. This ideally prevents the
+in and lock the pages using the sticky flag. This ideally prevents the
 frame table from evicting the page, but as described above, this can still
 happen. Thus, the page fault function allows the kernel to fault in user
 pages as well.
@@ -341,7 +341,7 @@ int mapid;  // Increasing map ID counter corresponding to the
 In userprog/process.h:
 
 struct mmap_file {  // An entry in the thread's mmap_list
-  struct spage *spte;  // The mmap-ed page in the thread
+  struct spage *sp;  // The mmap-ed page in the thread
   int mapid;  // The mmap-ed pages corresponding map ID
   struct list_elem elem;  // The list element in the mmap list
 };
@@ -366,7 +366,7 @@ mmap-ed files are munmapped by default, while other pages are simply
 >> any existing segment.
 
 The file is mapped in page-by-page to the corresponding address. At each
-page, its spte is added to the thread's hash table. However, if the hash
+page, its sp is added to the thread's hash table. However, if the hash
 table detects duplicate entries, then the new file mapping overlaps with
 an existing segment. Then, all the previous mappings for the new file are
 unmapped.
