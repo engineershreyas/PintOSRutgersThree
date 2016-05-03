@@ -2,13 +2,26 @@
 #define USERPROG_PROCESS_H
 
 #include "threads/thread.h"
-struct process_file {
-  struct file *file;
-  int fd;
-  struct list_elem elem;
-};
 
-struct mmap_file {
+/* A structure for holding process arguments, argv and argc in a page of
+   contiguous memory. */
+struct args_struct
+  {
+    char args[ARGS_SIZE];  /* String args. */
+    char *argv[ARGV_SIZE]; /* Pointers to args */
+    unsigned argc;         /* Number of args. */
+  };
+
+/* Data structure for an open file handle. */
+struct file_descriptor
+  {
+    int fd;                 /* File descriptor for file. */
+    struct file *file;      /* Pointer to open file. */
+    struct list_elem elem;  /* Element for list file lists. */
+  };
+
+
+struct mmap {
   struct spage *sp;
   int mapid;
   struct list_elem elem;
