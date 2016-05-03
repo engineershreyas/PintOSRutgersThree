@@ -606,7 +606,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 
 
 
-static bool setup_stack (struct args_struct *args_struct_ptr, void **esp);
+static bool setup_stack (struct args_struct *args_struct_ptr, void **esp)
 {
 
   bool success = stack_grow(((uint8_t *) PHYS_BASE) - PGSIZE);
@@ -661,50 +661,11 @@ push_args_to_stack (struct args_struct *args_struct_ptr, void **esp)
 	  /* Place argv, argc and dummy return pointer ont stack. */
 	  return push_word_to_stack ((uint32_t) argv, esp) && push_word_to_stack ((uint32_t) argc, esp) && push_word_to_stack (NULL, esp);
 
-  return success;
-}
-
-
-
-/* Push arguments into the stack. */
-static bool
-push_args_to_stack (struct args_struct *args_struct_ptr, void **esp)
-{
-  char **argv;
-  int argc, i, j;
-  size_t len;
-
-  /* Get arguments and argument count. */
-  argv = args_struct_ptr->argv;
-  argc = args_struct_ptr->argc;
-
-  /* Place arguments into stack. */
-  for (i = argc - 1; i >= 0; i--)
-    {
-      len = strlen (argv[i]);
-      for (j = len; j >= 0; j--)
-        if (!push_byte_to_stack ((uint8_t) argv[i][j], esp))
-          return false;
-      argv[i] = *esp;
-    }
-
-  /* Word align the stack. */
-  for (i = (uintptr_t) *esp % sizeof (uint32_t); i > 0; i--)
-    if (!push_byte_to_stack (NULL, esp))
-      return false;
-
-  /* Place pointers to arguments onto stack. */
-  if (!push_word_to_stack (NULL, esp))
-    return false;
-  for (i = argc - 1; i >= 0; i--)
-    if (!push_word_to_stack ((uint32_t) argv[i], esp))
-      return false;
-  argv = *esp;
-
-  /* Place argv, argc and dummy return pointer ont stack. */
-  return push_word_to_stack ((uint32_t) argv, esp) && push_word_to_stack ((uint32_t) argc, esp) && push_word_to_stack (NULL, esp);
 
 }
+
+
+
 
 /* Push a byte of data onto the stack. */
 static bool
@@ -846,8 +807,8 @@ void process_remove_mmap (int mapping){
     }
     e = next;
   if(f){
-    lock_acquire(&file_lock);
+    lock_acquire(&filesys_lock);
     file_close(f);
-    lock_release(&file_lock);
+    lock_release(&filesys_lock);
   }
 }
