@@ -3,6 +3,13 @@
 
 #include "threads/thread.h"
 
+/* Definitions of sizes in argument page for args and argv. */
+#define ARGS_SIZE PGSIZE / 2                                                       /* File_name+Arguments size. */
+#define ARGV_SIZE (PGSIZE - ARGS_SIZE - sizeof (unsigned)) / sizeof (char *)       /* Maximum argument count number. */
+#define ARGS_DELI " "                                                              /* Arguments separated by “ “. */
+#define WORD_SIZE 4                                                                /* Word size. */
+#define BAD_ARGS -1  
+
 /* A structure for holding process arguments, argv and argc in a page of
    contiguous memory. */
 struct args_struct
