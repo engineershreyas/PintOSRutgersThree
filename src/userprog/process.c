@@ -46,7 +46,7 @@ process_execute (const char *args)
 {
 
 
-	sturct args_struct *args_struct_ptr;
+	struct args_struct *args_struct_ptr;
 	tid_t tid = TID_ERROR;
 	struct process *child;
 
@@ -391,15 +391,15 @@ load (struct args_struct *args_struct_ptr, void (**eip) (void), void **esp)
 
   /* Open executable file. */
   lock_acquire(&filesys_lock);
-  file = filesys_open (file_name);
+  file = filesys_open (fn);
   if (file == NULL)
     {
-      printf ("load: %s: open failed\n", file_name);
+      printf ("load: %s: open failed\n", fn);
       goto done;
     }
   file_deny_write(file);
   file_d = malloc(sizeof (struct file_descriptor));
-	if(fild_d == NULL){
+	if(file_d == NULL){
 		file_close (file);
 		goto done;
 	}
@@ -419,7 +419,7 @@ load (struct args_struct *args_struct_ptr, void (**eip) (void), void **esp)
       || ehdr.e_phnum > 1024)
     {
 
-      printf ("load: %s: error loading executable\n", file_name);
+      printf ("load: %s: error loading executable\n", fn);
       goto done;
 
     }
@@ -493,7 +493,9 @@ load (struct args_struct *args_struct_ptr, void (**eip) (void), void **esp)
   *eip = (void (*) (void)) ehdr.e_entry;
 
   /* If we reached here startup was successful. */
-  return true;
+	done:
+  	lock_release(&filesys_lock);
+  	return success;
 }
 
 // argument_tokenize is for parsing the filename into different tokens.
@@ -591,7 +593,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
 
-      if(!add_file_to_table(file,ofs,upage,page_read_bytes,page_zero_bytes,writable)) return false;
+      if(!add_file_to_table(file,ofs,upage,page_read_bytes,page_zero_bytes,can_write)) return false;
 
       /* Advance. */
       read_bytes -= page_read_bytes;
@@ -605,7 +607,6 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 
 
 static bool setup_stack (struct args_struct *args_struct_ptr, void **esp);
-
 {
 
   bool success = stack_grow(((uint8_t *) PHYS_BASE) - PGSIZE);
@@ -644,34 +645,26 @@ push_args_to_stack (struct args_struct *args_struct_ptr, void **esp)
       argv[i] = *esp;
     }
 
+		/* Word align the stack. */
+	  for (i = (uintptr_t) *esp % sizeof (uint32_t); i > 0; i--)
+	    if (!push_byte_to_stack (NULL, esp))
+	      return false;
 
+	  /* Place pointers to arguments onto stack. */
+	  if (!push_word_to_stack (NULL, esp))
+	    return false;
+	  for (i = argc - 1; i >= 0; i--)
+	    if (!push_word_to_stack ((uint32_t) argv[i], esp))
+	      return false;
+	  argv = *esp;
 
-	success = push_args_to_stack(args_struct_ptr, esp);
+	  /* Place argv, argc and dummy return pointer ont stack. */
+	  return push_word_to_stack ((uint32_t) argv, esp) && push_word_to_stack ((uint32_t) argc, esp) && push_word_to_stack (NULL, esp);
 
   return success;
 }
 
-// argument_tokenize is for parsing the filename into different tokens.
-static void
-argument_tokenize (struct args_struct *args_struct_ptr)
-{
-  int argc_value = 0;
-  char *token, *save_ptr;
-  char **arg_variable = args_struct_ptr->argv;
-  for (token = strtok_r (args_struct_ptr->args, ARGS_DELI, &save_ptr); token != NULL; token = strtok_r (NULL, ARGS_DELI, &save_ptr))
-    {
-    //Check the count of the arguments cannot equal or larger than the THRESHOLD of the argument variables size
-    //Return the argc_value to -1
-      if (argc_value == ARGV_SIZE)
-        {
-          argc_value = BAD_ARGS;
-          break;
-        }
-      arg_variable[argc_value++] = token;
-    }
-  //Return the argc with the arguments number, or -1 if the arguments are too many
-  args_struct_ptr->argc = argc_value;
-}
+
 
 /* Push arguments into the stack. */
 static bool
@@ -746,7 +739,7 @@ push_word_to_stack (uint32_t val, void **esp)
    Returns true on success, false if UPAGE is already mapped or
    if memory allocation fails. */
  bool
-install_page (void *upage, void *kpage, bool writable)
+install_page (void *upage, void *kpage, bool can_write)
 {
   struct thread *t = thread_current ();
 
@@ -759,7 +752,7 @@ install_page (void *upage, void *kpage, bool writable)
 
 
 
-f
+
 
 void process_close_file (int fd)
 {
@@ -852,7 +845,6 @@ void process_remove_mmap (int mapping){
 
     }
     e = next;
-  }
   if(f){
     lock_acquire(&file_lock);
     file_close(f);
