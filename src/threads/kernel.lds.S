@@ -11,7 +11,7 @@ SECTIONS
   /* Make room for the ELF headers. */
   . = _start + SIZEOF_HEADERS;
 
-  /* Kernel starts with code, followed by read-only data and writable data. */
+  /* Kernel starts with code, followed by read-only data and can_write data. */
   .text : { *(.start) *(.text) } = 0x90
   .rodata : { *(.rodata) *(.rodata.*) 
 	      . = ALIGN(0x1000); 
@@ -19,7 +19,7 @@ SECTIONS
   .data : { *(.data) 
 	    _signature = .; LONG(0xaa55aa55) }
 
-  /* BSS (zero-initialized data) is after everything else. */
+  /* BSS (zero-initialized data) is afr everything else. */
   _start_bss = .;
   .bss : { *(.bss) }
   _end_bss = .;

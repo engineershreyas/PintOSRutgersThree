@@ -118,7 +118,7 @@ make_code_desc (int dpl)
   return make_seg_desc (0, 0xfffff, CLS_CODE_DATA, 10, dpl, GRAN_PAGE);
 }
 
-/* Returns a descriptor for a writable data segment with base at
+/* Returns a descriptor for a can_write data segment with base at
    0, a limit of 4 GB, and the given DPL. */
 static uint64_t
 make_data_desc (int dpl)

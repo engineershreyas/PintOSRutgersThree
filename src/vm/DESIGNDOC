@@ -39,10 +39,10 @@ struct hash spt; // The thread's supplemental page table
 
 In vm/page.h:
 
-struct sup_page_entry {  // Member of a thread's supplemental page table
+struct spage {  // Member of a thread's supplemental page table
   uint8_t type;  // Indicates whether the entry is a file, swap or mmap
-  void *uva;  // The user virtual address of physical memory page
-  bool writable;  // Whether the physical page is writable or not
+  void *data_to_fetch;  // The user virtual address of physical memory page
+  bool can_write;  // Whether the physical page is can_write or not
 
   bool is_loaded;  // Indicates whether the entry has been loaded into
                    // physical memory (or has been swapped out or written
@@ -74,7 +74,7 @@ struct list frame_table;  // The global frame table which indicates
 
 struct frame_entry {  // An entry in the frame table
   void *frame;  // Pointer to the physical memory frame
-  struct sup_page_entry *spte;  // Pointer to the supplemental page table
+  struct spage *spte;  // Pointer to the supplemental page table
                                 // entry currently using the physical frame
   struct thread *thread;  // The thread using the memory frame
   struct list_elem elem;  // List element for the frame table list
@@ -91,7 +91,7 @@ virtual address (not a stack address for simplicity of explanation)
 address. The user virtual address is rounded down to its corresponding
 memory page and is hashed to find the spte.
 2) Now a frame must be allocated for the supplemental page table
-entry. Frame_alloc is called, which either gets a new frame if one is
+entry. allocate_frame is called, which either gets a new frame if one is
 available or evicts a frame if one is not available.
 3) Then, the user virtual address is mapped to the physical frame address
 using the install_page function in process.c.
@@ -123,7 +123,7 @@ indicated in the supplemental page table.
 
 The frame table lock is used whenever frames are added or evicted to the
 global frame table. Thus, when two user processes need a new frame, they
-both call frame_alloc. Three situations could occur:
+both call allocate_frame. Three situations could occur:
 
 1) Both processes successfully get pages via palloc_get_page(). Thus, both
 processes need to add a new frame to the frame table and they are done
@@ -149,14 +149,14 @@ user virtual address for the given frame's thread.
 2) thread in frame_entry - This is needed since threads must invalidate
 other threads' virtual addresses. This requires some synchronization
 effort.
-3) pinned in sup_page_entry - This is set to true whenever the kernel is
+3) pinned in spage - This is set to true whenever the kernel is
 accessing the data in the spte. Thus, this means whenever kernel threads
 are accessing a frame, it cannot be evicted. This is key in preventing
 kernel crashes.
-4) uva in sup_page_entry - As discussed before, this is used so the kernel
+4) data_to_fetch in spage - As discussed before, this is used so the kernel
 only accesses data with the user virtual address, preventing alias
 problems with the access and dirty bits.
-5) is_loaded in sup_page_entry - Indicates whether a spte is already in
+5) is_loaded in spage - Indicates whether a spte is already in
 memory. This is especially important in syscalls, to test that the user
 page is already loaded (in order not to fault in the kernel).
 
@@ -341,7 +341,7 @@ int mapid;  // Increasing map ID counter corresponding to the
 In userprog/process.h:
 
 struct mmap_file {  // An entry in the thread's mmap_list
-  struct sup_page_entry *spte;  // The mmap-ed page in the thread
+  struct spage *spte;  // The mmap-ed page in the thread
   int mapid;  // The mmap-ed pages corresponding map ID
   struct list_elem elem;  // The list element in the mmap list
 };
@@ -381,7 +381,7 @@ unmapped.
 >> the two situations.
 
 Since mmapped files are loaded in the same way executables are, both
-functions use the load_file function when their pages are being loaded
+functions use the file_load function when their pages are being loaded
 into physical memory. Also, in the frame eviction, the mmap-ed dirty pages
 are simply written to their corresponding file. The clean mmap-ed pages
 are not written. This makes implementing the mmap-ed files an extension of

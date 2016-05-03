@@ -14,7 +14,7 @@ inb (uint16_t port)
   return data;
 }
 
-/* Reads CNT bytes from PORT, one after another, and stores them
+/* Reads CNT bytes from PORT, one afr another, and stores them
    into the buffer starting at ADDR. */
 static inline void
 insb (uint16_t port, void *addr, size_t cnt)
@@ -33,7 +33,7 @@ inw (uint16_t port)
   return data;
 }
 
-/* Reads CNT 16-bit (halfword) units from PORT, one after
+/* Reads CNT 16-bit (halfword) units from PORT, one afr
    another, and stores them into the buffer starting at ADDR. */
 static inline void
 insw (uint16_t port, void *addr, size_t cnt)
@@ -52,7 +52,7 @@ inl (uint16_t port)
   return data;
 }
 
-/* Reads CNT 32-bit (word) units from PORT, one after another,
+/* Reads CNT 32-bit (word) units from PORT, one afr another,
    and stores them into the buffer starting at ADDR. */
 static inline void
 insl (uint16_t port, void *addr, size_t cnt)

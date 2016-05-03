@@ -261,7 +261,7 @@ struct Elf32_Phdr
 
 /* Flags for p_flags.  See [ELF3] 2-3 and 2-4. */
 #define PF_X 1          /* Executable. */
-#define PF_W 2          /* Writable. */
+#define PF_W 2          /* can_write. */
 #define PF_R 4          /* Readable. */
 
 // Used for setup_stack
@@ -273,7 +273,7 @@ static bool setup_stack (void **esp, const char* file_name,
 static bool validate_segment (const struct Elf32_Phdr *, struct file *);
 static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
                           uint32_t read_bytes, uint32_t zero_bytes,
-                          bool writable);
+                          bool can_write);
 
 /* Loads an ELF executable from FILE_NAME into the current thread.
    Stores the executable's entry point into *EIP
@@ -349,7 +349,7 @@ load (const char *file_name, void (**eip) (void), void **esp,
         case PT_LOAD:
           if (validate_segment (&phdr, file)) 
             {
-              bool writable = (phdr.p_flags & PF_W) != 0;
+              bool can_write = (phdr.p_flags & PF_W) != 0;
               uint32_t file_page = phdr.p_offset & ~PGMASK;
               uint32_t mem_page = phdr.p_vaddr & ~PGMASK;
               uint32_t page_offset = phdr.p_vaddr & PGMASK;
@@ -370,7 +370,7 @@ load (const char *file_name, void (**eip) (void), void **esp,
                   zero_bytes = ROUND_UP (page_offset + phdr.p_memsz, PGSIZE);
                 }
               if (!load_segment (file, file_page, (void *) mem_page,
-                                 read_bytes, zero_bytes, writable))
+                                 read_bytes, zero_bytes, can_write))
                 goto done;
             }
           else
@@ -450,14 +450,14 @@ validate_segment (const struct Elf32_Phdr *phdr, struct file *file)
 
         - ZERO_BYTES bytes at UPAGE + READ_BYTES must be zeroed.
 
-   The pages initialized by this function must be writable by the
-   user process if WRITABLE is true, read-only otherwise.
+   The pages initialized by this function must be can_write by the
+   user process if can_write is true, read-only otherwise.
 
    Return true if successful, false if a memory allocation error
    or disk read error occurs. */
 static bool
 load_segment (struct file *file, off_t ofs, uint8_t *upage,
-              uint32_t read_bytes, uint32_t zero_bytes, bool writable) 
+              uint32_t read_bytes, uint32_t zero_bytes, bool can_write) 
 {
   ASSERT ((read_bytes + zero_bytes) % PGSIZE == 0);
   ASSERT (pg_ofs (upage) == 0);
@@ -472,8 +472,8 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
 
-      if (!add_file_to_page_table(file, ofs, upage, page_read_bytes,
-				  page_zero_bytes, writable))
+      if (!add_file_to_ptable(file, ofs, upage, page_read_bytes,
+				  page_zero_bytes, can_write))
 	{
 	  return false;
 	}
@@ -492,7 +492,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 static bool
 setup_stack (void **esp, const char* file_name, char** save_ptr) 
 {
-  bool success = grow_stack(((uint8_t *) PHYS_BASE) - PGSIZE);
+  bool success = stack_grow(((uint8_t *) PHYS_BASE) - PGSIZE);
   if (success)
     *esp = PHYS_BASE;
   else
@@ -559,21 +559,21 @@ setup_stack (void **esp, const char* file_name, char** save_ptr)
 
 /* Adds a mapping from user virtual address UPAGE to kernel
    virtual address KPAGE to the page table.
-   If WRITABLE is true, the user process may modify the page;
+   If can_write is true, the user process may modify the page;
    otherwise, it is read-only.
    UPAGE must not already be mapped.
    KPAGE should probably be a page obtained from the user pool
    with palloc_get_page().
    Returns true on success, false if UPAGE is already mapped or
    if memory allocation fails. */
-bool install_page (void *upage, void *kpage, bool writable)
+bool install_page (void *upage, void *kpage, bool can_write)
 {
   struct thread *t = thread_current ();
 
   /* Verify that there's not already a page at that virtual
      address, then map our page there. */
   return (pagedir_get_page (t->pagedir, upage) == NULL
-          && pagedir_set_page (t->pagedir, upage, kpage, writable));
+          && pagedir_set_page (t->pagedir, upage, kpage, can_write));
 }
 
 
@@ -631,7 +631,7 @@ void process_close_file (int fd)
     }
 }
 
-bool process_add_mmap (struct sup_page_entry *spte)
+bool process_add_mmap (struct spage *spte)
 {
   struct mmap_file *mm = malloc(sizeof(struct mmap_file));
   if (!mm)
@@ -660,15 +660,15 @@ void process_remove_mmap (int mapping)
 	  mm->spte->pinned = true;
 	  if (mm->spte->is_loaded)
 	    {
-	      if (pagedir_is_dirty(t->pagedir, mm->spte->uva))
+	      if (pagedir_is_dirty(t->pagedir, mm->spte->data_to_fetch))
 		{
 		  lock_acquire(&filesys_lock);
-		  file_write_at(mm->spte->file, mm->spte->uva,
+		  file_write_at(mm->spte->file, mm->spte->data_to_fetch,
 				mm->spte->read_bytes, mm->spte->offset);
 		  lock_release(&filesys_lock);
 		}
-	      frame_free(pagedir_get_page(t->pagedir, mm->spte->uva));
-	      pagedir_clear_page(t->pagedir, mm->spte->uva);
+	      free_frame(pagedir_get_page(t->pagedir, mm->spte->data_to_fetch));
+	      pagedir_clear_page(t->pagedir, mm->spte->data_to_fetch);
 	    }
 	  if (mm->spte->type != HASH_ERROR)
 	    {

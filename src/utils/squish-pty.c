@@ -77,7 +77,7 @@ make_nonblocking (int fd, bool nonblocking)
 /* Handle a read or write on *FD, which is the pty if FD_IS_PTY
    is true, that returned end-of-file or error indication RETVAL.
    The system call is named CALL, for use in error messages.
-   Sets *FD to -1 if the fd is no longer readable or writable. */
+   Sets *FD to -1 if the fd is no longer readable or can_write. */
 static void
 handle_error (ssize_t retval, int *fd, bool fd_is_pty, const char *call)
 {

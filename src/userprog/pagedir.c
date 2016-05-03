@@ -91,12 +91,12 @@ lookup_page (uint32_t *pd, const void *vaddr, bool create)
    UPAGE must not already be mapped.
    KPAGE should probably be a page obtained from the user pool
    with palloc_get_page().
-   If WRITABLE is true, the new page is read/write;
+   If can_write is true, the new page is read/write;
    otherwise it is read-only.
    Returns true if successful, false if memory allocation
    failed. */
 bool
-pagedir_set_page (uint32_t *pd, void *upage, void *kpage, bool writable)
+pagedir_set_page (uint32_t *pd, void *upage, void *kpage, bool can_write)
 {
   uint32_t *pte;
 
@@ -111,7 +111,7 @@ pagedir_set_page (uint32_t *pd, void *upage, void *kpage, bool writable)
   if (pte != NULL) 
     {
       ASSERT ((*pte & PTE_P) == 0);
-      *pte = pte_create_user (kpage, writable);
+      *pte = pte_create_user (kpage, can_write);
       return true;
     }
   else

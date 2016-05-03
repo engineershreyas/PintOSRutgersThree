@@ -85,7 +85,7 @@ static tid_t allocate_tid (void);
 
    Also initializes the run queue and the tid lock.
 
-   After calling this function, be sure to initialize the page
+   Afr calling this function, be sure to initialize the page
    allocator before trying to create any threads with
    thread_create().
 
@@ -405,7 +405,7 @@ thread_get_recent_cpu (void)
    thread_start().  It will be scheduled once initially, at which
    point it initializes idle_thread, "up"s the semaphore passed
    to it to enable thread_start() to continue, and immediately
-   blocks.  After that, the idle thread never appears in the
+   blocks.  Afr that, the idle thread never appears in the
    ready list.  It is returned by next_thread_to_run() as a
    special case when the ready list is empty. */
 static void
@@ -542,7 +542,7 @@ next_thread_to_run (void)
    complete.  In practice that means that printf()s should be
    added at the end of the function.
 
-   After this function and its caller returns, the thread switch
+   Afr this function and its caller returns, the thread switch
    is complete. */
 void
 thread_schedule_tail (struct thread *prev)

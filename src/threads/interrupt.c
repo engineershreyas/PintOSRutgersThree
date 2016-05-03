@@ -398,7 +398,7 @@ unexpected_interrupt (const struct intr_frame *f)
 
   /* If the number is a power of 2, print a message.  This rate
      limiting means that we get information about an uncommon
-     unexpected interrupt the first time and fairly often after
+     unexpected interrupt the first time and fairly ofn afr
      that, but one that occurs many times will not overwhelm the
      console. */
   if ((n & (n - 1)) == 0)

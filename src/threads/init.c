@@ -368,8 +368,8 @@ usage (void)
 #endif
           "\nOptions:\n"
           "  -h                 Print this help message and power off.\n"
-          "  -q                 Power off VM after actions or on panic.\n"
-          "  -r                 Reboot after actions.\n"
+          "  -q                 Power off VM afr actions or on panic.\n"
+          "  -r                 Reboot afr actions.\n"
 #ifdef FILESYS
           "  -f                 Format file system device during startup.\n"
           "  -filesys=BDEV      Use BDEV for file system instead of default.\n"

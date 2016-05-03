@@ -20,11 +20,11 @@
 
 static void syscall_handler (struct intr_frame *);
 void get_arg (struct intr_frame *f, int *arg, int n);
-struct sup_page_entry* check_valid_ptr (const void *vaddr, void* esp);
+struct spage* check_valid_ptr (const void *vaddr, void* esp);
 void check_valid_buffer (void* buffer, unsigned size, void* esp,
 			 bool to_write);
 void check_valid_string (const void* str, void* esp);
-void check_write_permission (struct sup_page_entry *spte);
+void check_write_permission (struct spage *spte);
 void unpin_ptr (void* vaddr);
 void unpin_string (void* str);
 void unpin_buffer (void* buffer, unsigned size);
@@ -170,7 +170,7 @@ int mmap (int fd, void *addr)
     {
       uint32_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
       uint32_t page_zero_bytes = PGSIZE - page_read_bytes;
-      if (!add_mmap_to_page_table(file, ofs,
+      if (!add_mmap_to_ptable(file, ofs,
 				  addr, page_read_bytes, page_zero_bytes))
 	{
 	  munmap(thread_current()->mapid);
@@ -350,30 +350,30 @@ void close (int fd)
   lock_release(&filesys_lock);
 }
 
-void check_write_permission (struct sup_page_entry *spte)
+void check_write_permission (struct spage *spte)
 {
-  if (!spte->writable)
+  if (!spte->can_write)
     {
       exit(ERROR);
     }
 }
 
-struct sup_page_entry* check_valid_ptr(const void *vaddr, void* esp)
+struct spage* check_valid_ptr(const void *vaddr, void* esp)
 {
   if (!is_user_vaddr(vaddr) || vaddr < USER_VADDR_BOTTOM)
     {
       exit(ERROR);
     }
   bool load = false;
-  struct sup_page_entry *spte = get_spte((void *) vaddr);
+  struct spage *spte = get_sp((void *) vaddr);
   if (spte)
     {
-      load_page(spte);
+      page_load(spte);
       load = spte->is_loaded;
     }
   else if (vaddr >= esp - STACK_HEURISTIC)
     {
-      load = grow_stack((void *) vaddr);
+      load = stack_grow((void *) vaddr);
     }
   if (!load)
     {
@@ -458,11 +458,11 @@ void check_valid_buffer (void* buffer, unsigned size, void* esp,
   char* local_buffer = (char *) buffer;
   for (i = 0; i < size; i++)
     {
-      struct sup_page_entry *spte = check_valid_ptr((const void*)
+      struct spage *spte = check_valid_ptr((const void*)
 						    local_buffer, esp);
       if (spte && to_write)
 	{
-	  if (!spte->writable)
+	  if (!spte->can_write)
 	    {
 	      exit(ERROR);
 	    }
@@ -483,7 +483,7 @@ void check_valid_string (const void* str, void* esp)
 
 void unpin_ptr (void* vaddr)
 {
-  struct sup_page_entry *spte = get_spte(vaddr);
+  struct spage *spte = get_sp(vaddr);
   if (spte)
     {
       spte->pinned = false;

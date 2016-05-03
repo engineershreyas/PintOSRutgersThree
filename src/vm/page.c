@@ -15,18 +15,18 @@
 
 static unsigned page_hash_func (const struct hash_elem *e, void *aux UNUSED)
 {
-  struct sup_page_entry *spte = hash_entry(e, struct sup_page_entry,
+  struct spage *spte = hash_entry(e, struct spage,
 					   elem);
-  return hash_int((int) spte->uva);
+  return hash_int((int) spte->data_to_fetch);
 }
 
 static bool page_less_func (const struct hash_elem *a,
 			    const struct hash_elem *b,
 			    void *aux UNUSED)
 {
-  struct sup_page_entry *sa = hash_entry(a, struct sup_page_entry, elem);
-  struct sup_page_entry *sb = hash_entry(b, struct sup_page_entry, elem);
-  if (sa->uva < sb->uva)
+  struct spage *sa = hash_entry(a, struct spage, elem);
+  struct spage *sb = hash_entry(b, struct spage, elem);
+  if (sa->data_to_fetch < sb->data_to_fetch)
     {
       return true;
     }
@@ -35,12 +35,12 @@ static bool page_less_func (const struct hash_elem *a,
 
 static void page_action_func (struct hash_elem *e, void *aux UNUSED)
 {
-  struct sup_page_entry *spte = hash_entry(e, struct sup_page_entry,
+  struct spage *spte = hash_entry(e, struct spage,
 					   elem);
   if (spte->is_loaded)
     {
-      frame_free(pagedir_get_page(thread_current()->pagedir, spte->uva));
-      pagedir_clear_page(thread_current()->pagedir, spte->uva);
+      free_frame(pagedir_get_page(thread_current()->pagedir, spte->data_to_fetch));
+      pagedir_clear_page(thread_current()->pagedir, spte->data_to_fetch);
     }
   free(spte);
 }
@@ -55,20 +55,20 @@ void page_table_destroy (struct hash *spt)
   hash_destroy (spt, page_action_func);
 }
 
-struct sup_page_entry* get_spte (void *uva)
+struct spage* get_sp (void *data_to_fetch)
 {
-  struct sup_page_entry spte;
-  spte.uva = pg_round_down(uva);
+  struct spage spte;
+  spte.data_to_fetch = pg_round_down(data_to_fetch);
 
   struct hash_elem *e = hash_find(&thread_current()->spt, &spte.elem);
   if (!e)
     {
       return NULL;
     }
-  return hash_entry (e, struct sup_page_entry, elem);
+  return hash_entry (e, struct spage, elem);
 }
 
-bool load_page (struct sup_page_entry *spte)
+bool page_load (struct spage *spte)
 {
   bool success = false;
   spte->pinned = true;
@@ -79,43 +79,43 @@ bool load_page (struct sup_page_entry *spte)
   switch (spte->type)
     {
     case FILE:
-      success = load_file(spte);
+      success = file_load(spte);
       break;
     case SWAP:
-      success = load_swap(spte);
+      success = swap_load(spte);
       break;
     case MMAP:
-      success = load_file(spte);
+      success = file_load(spte);
       break;
     }
   return success;
 }
 
-bool load_swap (struct sup_page_entry *spte)
+bool swap_load (struct spage *spte)
 {
-  uint8_t *frame = frame_alloc (PAL_USER, spte);
+  uint8_t *frame = allocate_frame (PAL_USER, spte);
   if (!frame)
     {
       return false;
     }
-  if (!install_page(spte->uva, frame, spte->writable))
+  if (!install_page(spte->data_to_fetch, frame, spte->can_write))
     {
-      frame_free(frame);
+      free_frame(frame);
       return false;
     }
-  swap_in(spte->swap_index, spte->uva);
+  swap_in(spte->swap_index, spte->data_to_fetch);
   spte->is_loaded = true;
   return true;
 }
 
-bool load_file (struct sup_page_entry *spte)
+bool file_load (struct spage *spte)
 {
   enum palloc_flags flags = PAL_USER;
   if (spte->read_bytes == 0)
     {
       flags |= PAL_ZERO;
     }
-  uint8_t *frame = frame_alloc(flags, spte);
+  uint8_t *frame = allocate_frame(flags, spte);
   if (!frame)
     {
       return false;
@@ -128,16 +128,16 @@ bool load_file (struct sup_page_entry *spte)
 						 spte->offset))
 	{
 	  lock_release(&filesys_lock);
-	  frame_free(frame);
+	  free_frame(frame);
 	  return false;
 	}
       lock_release(&filesys_lock);
       memset(frame + spte->read_bytes, 0, spte->zero_bytes);
     }
 
-  if (!install_page(spte->uva, frame, spte->writable))
+  if (!install_page(spte->data_to_fetch, frame, spte->can_write))
     {
-      frame_free(frame);
+      free_frame(frame);
       return false;
     }
 
@@ -145,21 +145,21 @@ bool load_file (struct sup_page_entry *spte)
   return true;
 }
 
-bool add_file_to_page_table (struct file *file, int32_t ofs, uint8_t *upage,
+bool add_file_to_ptable (struct file *file, int32_t ofs, uint8_t *upage,
 			     uint32_t read_bytes, uint32_t zero_bytes,
-			     bool writable)
+			     bool can_write)
 {
-  struct sup_page_entry *spte = malloc(sizeof(struct sup_page_entry));
+  struct spage *spte = malloc(sizeof(struct spage));
   if (!spte)
     {
       return false;
     }
   spte->file = file;
   spte->offset = ofs;
-  spte->uva = upage;
+  spte->data_to_fetch = upage;
   spte->read_bytes = read_bytes;
   spte->zero_bytes = zero_bytes;
-  spte->writable = writable;
+  spte->can_write = can_write;
   spte->is_loaded = false;
   spte->type = FILE;
   spte->pinned = false;
@@ -167,22 +167,22 @@ bool add_file_to_page_table (struct file *file, int32_t ofs, uint8_t *upage,
   return (hash_insert(&thread_current()->spt, &spte->elem) == NULL);
 }
 
-bool add_mmap_to_page_table(struct file *file, int32_t ofs, uint8_t *upage,
+bool add_mmap_to_ptable(struct file *file, int32_t ofs, uint8_t *upage,
 			     uint32_t read_bytes, uint32_t zero_bytes)
 {
-  struct sup_page_entry *spte = malloc(sizeof(struct sup_page_entry));
+  struct spage *spte = malloc(sizeof(struct spage));
   if (!spte)
     {
       return false;
     }
   spte->file = file;
   spte->offset = ofs;
-  spte->uva = upage;
+  spte->data_to_fetch = upage;
   spte->read_bytes = read_bytes;
   spte->zero_bytes = zero_bytes;
   spte->is_loaded = false;
   spte->type = MMAP;
-  spte->writable = true;
+  spte->can_write = true;
   spte->pinned = false;
 
   if (!process_add_mmap(spte))
@@ -199,34 +199,34 @@ bool add_mmap_to_page_table(struct file *file, int32_t ofs, uint8_t *upage,
   return true;
 }
 
-bool grow_stack (void *uva)
+bool stack_grow (void *data_to_fetch)
 {
-  if ( (size_t) (PHYS_BASE - pg_round_down(uva)) > MAX_STACK_SIZE)
+  if ( (size_t) (PHYS_BASE - pg_round_down(data_to_fetch)) > MAX_STACK_SIZE)
     {
       return false;
     }
- struct sup_page_entry *spte = malloc(sizeof(struct sup_page_entry));
+ struct spage *spte = malloc(sizeof(struct spage));
   if (!spte)
     {
       return false;
     }
-  spte->uva = pg_round_down(uva);
+  spte->data_to_fetch = pg_round_down(data_to_fetch);
   spte->is_loaded = true;
-  spte->writable = true;
+  spte->can_write = true;
   spte->type = SWAP;
   spte->pinned = true;
 
-  uint8_t *frame = frame_alloc (PAL_USER, spte);
+  uint8_t *frame = allocate_frame (PAL_USER, spte);
   if (!frame)
     {
       free(spte);
       return false;
     }
 
-  if (!install_page(spte->uva, frame, spte->writable))
+  if (!install_page(spte->data_to_fetch, frame, spte->can_write))
     {
       free(spte);
-      frame_free(frame);
+      free_frame(frame);
       return false;
     }
 

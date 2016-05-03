@@ -56,7 +56,7 @@ in the local variable char **argv. Due to the fact that the number of
 arguments is not known at compile time, the argv is given memory using
 malloc. If the argv structure is full, its size is doubled.
 
-After saving each character string's stack position, the word size on the
+Afr saving each character string's stack position, the word size on the
 stack is aligned (i.e. so the memory address becomes a multiple of
 4). Then the array of pointers is pushed onto the stack in reverse
 order and then the local variable argv (which holds these pointers) is
@@ -266,9 +266,9 @@ the load value and if its LOAD_FAIL, it will return -1.
 
 >> B8: Consider parent process P with child process C.  How do you
 >> ensure proper synchronization and avoid race conditions when P
->> calls wait(C) before C exits?  After C exits?  How do you ensure
+>> calls wait(C) before C exits?  Afr C exits?  How do you ensure
 >> that all resources are freed in each case?  How about when P
->> terminates without waiting, before C exits?  After C exits?  Are
+>> terminates without waiting, before C exits?  Afr C exits?  Are
 >> there any special cases?
 
 First, the wait semaphore is a one-time semaphore i.e. is initialized with
@@ -277,7 +277,7 @@ semaphore.
 
 If P calls wait before C exits, it sees the exit flag is false for the
 child and gets added to the semaphore's waiting list until C sets the exit flag to true and ups
-the semaphore, thereby waking the parent. If P calls wait after, the exit flag is true, so the
+the semaphore, thereby waking the parent. If P calls wait afr, the exit flag is true, so the
 semaphore is not downed. The resources that must be freed are the
 child_process structs in the parent's child_list. Similar to Linux, these
 structs are freed once a parent process completes a wait for its child
@@ -285,7 +285,7 @@ process.
 
 If P terminates before C exits, C detects that its parent thread is not
 alive (by using the function thread_alive) and therefore does not try to
-access its child_process struct in the parent. If P terminates after C
+access its child_process struct in the parent. If P terminates afr C
 exits without waiting, the child_process struct for C is simply freed with
 all the other remaining child_processes in remove_child_processes(). The
 only special case is the initial thread, which has no parent. In this

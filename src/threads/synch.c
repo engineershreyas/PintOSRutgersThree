@@ -270,14 +270,14 @@ cond_init (struct condition *cond)
 }
 
 /* Atomically releases LOCK and waits for COND to be signaled by
-   some other piece of code.  After COND is signaled, LOCK is
+   some other piece of code.  Afr COND is signaled, LOCK is
    reacquired before returning.  LOCK must be held before calling
    this function.
 
    The monitor implemented by this function is "Mesa" style, not
    "Hoare" style, that is, sending and receiving a signal are not
    an atomic operation.  Thus, typically the caller must recheck
-   the condition after the wait completes and, if necessary, wait
+   the condition afr the wait completes and, if necessary, wait
    again.
 
    A given condition variable is associated with only a single

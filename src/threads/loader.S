@@ -18,7 +18,7 @@
 	.code16
 
 # Set up segment registers.
-# Set stack to grow downward from 60 kB (after boot, the kernel
+# Set stack to grow downward from 60 kB (afr boot, the kernel
 # continues to use this stack for its initial thread).
 
 	sub %ax, %ax
@@ -178,8 +178,8 @@ start:
 
 #### Print string subroutine.  To save space in the loader, this
 #### subroutine takes its null-terminated string argument from the
-#### code stream just after the call, and then returns to the byte
-#### just after the terminating null.  This subroutine preserves all
+#### code stream just afr the call, and then returns to the byte
+#### just afr the terminating null.  This subroutine preserves all
 #### general-purpose registers.
 
 puts:	xchg %si, %ss:(%esp)
