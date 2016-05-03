@@ -175,6 +175,8 @@ thread_create (const char *name, int priority,
                thread_func *function, void *aux)
 {
   struct thread *t;
+  struct process *p;
+  struct thread *cur;
   struct kernel_thread_frame *kf;
   struct switch_entry_frame *ef;
   struct switch_threads_frame *sf;
@@ -514,14 +516,14 @@ init_thread (struct thread *t, const char *name, int priority)
   list_init(&t->lock_list);
 
   list_init(&t->files);
-  t->fd = MIN_FD;
+
 
   list_init(&t->mmap_list);
   t->mapid = 0;
 
   list_init(&t->children);
   t->cp = NULL;
-  t->parent = NO_PARENT;
+  t->parent = -1;
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and

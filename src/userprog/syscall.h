@@ -13,18 +13,9 @@
 #define USER_VADDR_BOTTOM ((void *) 0x08048000)
 #define STACK_HEURISTIC 32
 
-struct lock file_lock;
+struct lock filesys_lock;
 
-struct child_process {
-  int pid;
-  int load;
-  bool wait;
-  bool exit;
-  int status;
-  struct semaphore load_sema;
-  struct semaphore exit_sema;
-  struct list_elem elem;
-};
+
 
 struct child_process* add_child_process (int pid);
 struct child_process* get_child_process (int pid);
