@@ -98,7 +98,7 @@ start_process (void *args_)
 
 
 
-  spage_table_init(&thread_current()->spt);
+  page_table_init(&thread_current()->spt);
 
   /* Initialize interrupt frame and load executable. */
   memset (&if_, 0, sizeof if_);
@@ -593,7 +593,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
 
-      if(!add_file_to_table(file,ofs,upage,page_read_bytes,page_zero_bytes,can_write)) return false;
+      if(!add_file_to_ptable(file,ofs,upage,page_read_bytes,page_zero_bytes,can_write)) return false;
 
       /* Advance. */
       read_bytes -= page_read_bytes;
