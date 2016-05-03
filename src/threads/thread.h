@@ -8,6 +8,7 @@
 #include "threads/synch.h"
 #include "threads/vaddr.h"
 #include "filesys/file.h"
+#include "lib/user/syscall.h"
 
 /* States in a thread's life cycle. */
 enum thread_status
