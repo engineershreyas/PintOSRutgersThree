@@ -21,7 +21,7 @@
 #include "threads/synch.h"
 #include "vm/frame.h"
 #include "vm/swap.h"
-#include "vm/spage.h"
+#include "vm/page.h"
 
 const uint8_t *USER_STACK_VADDR = (uint8_t *) PHYS_BASE - PGSIZE;
 static thread_func start_process NO_RETURN;
