@@ -103,7 +103,7 @@ bool swap_load (struct spage *sp)
       free_frame(frame);
       return false;
     }
-  swap_in(sp->swap_index, sp->data_to_fetch);
+  swap_in(sp->swap_mode, sp->data_to_fetch);
   sp->valid_access = true;
   return true;
 }

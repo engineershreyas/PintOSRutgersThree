@@ -104,7 +104,7 @@ void* evict_frame (enum palloc_flags flags)
 		  else
 		    {
 		      f->sp->type = SWAP;
-		      f->sp->swap_index = swap_out(f->frame);
+		      f->sp->swap_mode = swap_out(f->frame);
 		    }
 		}
 	      f->sp->valid_access = false;
