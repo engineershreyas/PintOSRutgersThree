@@ -8,7 +8,6 @@
 #include "threads/synch.h"
 #include "threads/vaddr.h"
 #include "filesys/file.h"
-#include "lib/user/syscall.h"
 
 /* States in a thread's life cycle. */
 enum thread_status
@@ -22,8 +21,9 @@ enum thread_status
 /* Thread identifier type.
    You can redefine this to whatever type you like. */
 typedef int tid_t;
+typedef int pid_t;
 #define TID_ERROR ((tid_t) -1)          /* Error value for tid_t. */
-#define PID_ERROR ((pid_t) -1)
+#define PID_ERROR (() -1)
 
 #include "userprog/process.h"
 
@@ -141,7 +141,8 @@ struct thread
 
     // Needed for wait / exec sys calls
     tid_t parent;
-
+    // Points to child_process struct in parent's child list
+    struct child_process* cp;
 
     // Needed for denying writes to executables
     struct file* executable;
