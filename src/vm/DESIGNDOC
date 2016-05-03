@@ -340,7 +340,7 @@ int mapid;  // Increasing map ID counter corresponding to the
 
 In userprog/process.h:
 
-struct mmap_file {  // An entry in the thread's mmap_list
+struct mmap {  // An entry in the thread's mmap_list
   struct spage *sp;  // The mmap-ed page in the thread
   int mapid;  // The mmap-ed pages corresponding map ID
   struct list_elem elem;  // The list element in the mmap list

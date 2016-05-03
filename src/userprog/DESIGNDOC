@@ -105,14 +105,14 @@ In the thread struct in thread.h:
 struct lock_list;
 - A list of locks the process holds, released upon exit
 
-struct list file_list;
+struct list files;
 - A list of open files for the given process
 
 int fd;
 - The file descriptor counter for the given process, starting at 2 (since
 0 and 1 are stdin and stdout)
 
-struct list child_list;
+struct list children;
 - The list of child processes the given process spawns
 
 tid_t parent;
@@ -147,7 +147,7 @@ struct child_process {
 struct lock filesys_lock;
 - The global filesystem lock, used for all file system sys calls
 
-struct process_file {
+struct file_descriptor {
   struct file *file; // Open file struct
   int fd; // The file descriptor corresponding to the open file
   struct list_elem elem; // List element in the process' file list
@@ -279,7 +279,7 @@ If P calls wait before C exits, it sees the exit flag is false for the
 child and gets added to the semaphore's waiting list until C sets the exit flag to true and ups
 the semaphore, thereby waking the parent. If P calls wait afr, the exit flag is true, so the
 semaphore is not downed. The resources that must be freed are the
-child_process structs in the parent's child_list. Similar to Linux, these
+child_process structs in the parent's children. Similar to Linux, these
 structs are freed once a parent process completes a wait for its child
 process.
 

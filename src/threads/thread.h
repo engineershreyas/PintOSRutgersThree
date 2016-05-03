@@ -5,6 +5,9 @@
 #include <list.h>
 #include <hash.h>
 #include <stdint.h>
+#include "threads/synch.h"
+#include "threads/vaddr.h"
+#include "filesys/file.h"
 
 /* States in a thread's life cycle. */
 enum thread_status
@@ -18,12 +21,36 @@ enum thread_status
 /* Thread identifier type.
    You can redefine this to whatever type you like. */
 typedef int tid_t;
+typedef int pid_t;
 #define TID_ERROR ((tid_t) -1)          /* Error value for tid_t. */
+#define PID_ERROR ((pid_t) -1)
+
+#include "userprog/process.h"
+
+/* States in a process's life cycle. */;
+enum process_status
+  {
+    PROCESS_FAIL,
+    PROCESS_RUN,
+    PROCESS_DEAD,
+    PROCESS_ORPHAN
+  };
 
 /* Thread priorities. */
 #define PRI_MIN 0                       /* Lowest priority. */
 #define PRI_DEFAULT 31                  /* Default priority. */
 #define PRI_MAX 63                      /* Highest priority. */
+
+/* Data structure representing a user process. */
+struct process
+  {
+    pid_t pid;                  /* The PID of the process. */
+    enum process_status status; /* Current state of the process. */
+    struct list_elem elem;      /* The process's list elem. */
+    struct semaphore sema;      /* To synch exec and wait with parent. */
+    struct lock status_lock;    /* Lock to modify process's status. */
+    int exit;                   /* Exit code of this process. */
+  };
 
 /* A kernel thread or user process.
 
@@ -97,6 +124,11 @@ struct thread
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
+
+    int fd;
+    struct process *proc;
+    struct list files;
+    struct list children;
 #endif
 
     /* Owned by thread.c. */
@@ -105,15 +137,11 @@ struct thread
     // Needed to keep track of locks thread holds
     struct list lock_list;
 
-    // Needed for file system sys calls
-    struct list file_list;
-    int fd;
+
 
     // Needed for wait / exec sys calls
-    struct list child_list;
     tid_t parent;
-    // Points to child_process struct in parent's child list
-    struct child_process* cp;
+    
 
     // Needed for denying writes to executables
     struct file* executable;
