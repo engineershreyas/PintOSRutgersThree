@@ -27,7 +27,7 @@ struct spage {
 //NOTE: use filesys.h to access data from the file system. These functions will be needed to store data into "data_to_fetch"
 void spage_table_init(void);
 void store_visited_page(void); //pass current pt address to the supplemental pt
-void set_on_pte(void);
+void set_on_pte(void* buffer);
 void spage_load_file(void* fault_addr);
 
 #endif

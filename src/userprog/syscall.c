@@ -10,6 +10,9 @@
 #include <list.h>
 #include "threads/malloc.h"
 #include "devices/shutdown.h"
+#include "threads/init.h"
+#include "vm/spage.h"
+#include "vm/frame.h"
 
 #define ARG0 (*(esp + 1))
 #define ARG1 (*(esp + 2))
@@ -19,6 +22,13 @@
 #define ARG5 (*(esp + 6))
 
 struct lock file_lock;
+struct list mmap_list;
+
+struct mmapid_to_addr { //maps an mmap id to an address
+  mapid_t mmapid;
+  void* addr;
+  struct list_elem elem;
+};
 
 static void syscall_handler (struct intr_frame *);
 
@@ -26,6 +36,7 @@ void
 syscall_init (void) 
 {
   lock_init(&file_lock);
+  list_init(&mmap_list);
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
 
@@ -231,6 +242,47 @@ close (int fd)
   lock_release(&file_lock);
 }
 
+mapid_t mmap(int fd, void* addr) {
+
+  //no need for locks yet, as the "files" list is defined within the thread struct
+  struct file* file_to_map;
+  struct thread* curr_thread = thread_current();
+  //retrieve the file
+  file_to_map = get_file(fd);
+  
+  //store the file on the buffer
+  file_read(file_to_map, addr, filesize(fd));
+
+  set_on_pte(addr); //maps the file on this address to the supp page table
+  curr_thread->mmapid++;
+
+  struct mmapid_to_addr maddr;
+  maddr.mmapid = curr_thread->mmapid;
+  maddr.addr = addr;
+  lock_acquire(&file_lock);
+  list_push_back(&mmap_list, &maddr.elem);
+  lock_release(&file_lock);
+  //associate each addr on mmap list with their corresponding position
+  return curr_thread->mmapid;
+
+}
+
+void munmap(mapid_t mmapid) {
+  struct thread* curr_thread = thread_current();
+  
+  lock_acquire(&file_lock);
+  //find the mapping on the mmap_to_addr list
+  struct list_elem* e;
+  for(e = list_begin(&mmap_list); e != list_end(&mmap_list); e = list_next(e)) {
+    struct mmapid_to_addr* maddr = list_entry(e, struct mmapid_to_addr, elem);
+    if (maddr->mmapid == mmapid){
+      list_remove(maddr);
+      break;
+    }
+  }
+  lock_release(&file_lock);
+}
+
 static void
 syscall_handler (struct intr_frame *f) 
 {
@@ -278,6 +330,12 @@ syscall_handler (struct intr_frame *f)
         break;
       case SYS_CLOSE:
         close ((int) ARG0);
+        break;
+      case SYS_MMAP:
+        f->eax = mmap((int) ARG0, (void*) ARG1);
+        break;
+      case SYS_MUNMAP:
+        munmap(ARG0);
         break;
       default:
         printf ("Invalid syscall!\n");

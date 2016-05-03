@@ -4,6 +4,7 @@
 #include "vm/frame.h"
 #include "filesys/file.h"
 #include "vm/spage.h"
+#include "threads/synch.h"
 
 /*REMEMBER:
 the page table pointer points to the physical addresses
@@ -18,21 +19,20 @@ void spage_table_init(void) {
 	lock_init(&spage_table_access);
 }
 
-void set_on_pte(void) { //sets a spage table's parameters based on the page table entry 
-	//init_page_dir in  the init.h file is used as the main page table
+void set_on_pte(void* buffer) { //sets a spage table's parameters based on the page table entry 
 	
 	lock_acquire(& spage_table_access);
 	//check if pte exists on the visited pages list, if not then add it
 	struct list_elem* e;
 	for(e = list_begin(&visited_pages); e != list_end(&visited_pages); e = list_next(e)) {
 		struct spage *sp = list_entry(e, struct spage, elem);
-		if (sp->pt_ptr == init_page_dir) {
+		if (sp->pt_ptr == buffer) {
 			break;
 		}
 	}
 
 	struct spage add_supp;
-	add_supp.pt_ptr = init_page_dir;
+	add_supp.pt_ptr = buffer;
 
 	if (*add_supp.pt_ptr <= PHYS_BASE) {
 		add_supp.valid_access = 1;
@@ -59,6 +59,8 @@ void set_on_pte(void) { //sets a spage table's parameters based on the page tabl
 	} else {
 		add_supp.read_only = 1;
 	}
+
+	list_push_back(&visited_pages, &add_supp.elem);
 	lock_release(&spage_table_access);
 
 	return;

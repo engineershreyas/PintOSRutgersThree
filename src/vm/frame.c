@@ -29,7 +29,7 @@ void frame_table_init(void) {
   lock_init(&frame_table_access);
 }
 
-void add_to_frame_table(void* pages, size_t page_cnt) {
+void add_to_frame_table(void* pages) {
 
 	if (list_size(&frame_table) == 512) {
 		PANIC("Frame table full!");

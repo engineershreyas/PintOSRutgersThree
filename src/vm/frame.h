@@ -30,7 +30,7 @@ struct page_to_frame {
 //initialize globals
 void frame_table_init(void);
 //returns viod
-void add_to_frame_table(void* pages, size_t page_cnt);
+void add_to_frame_table(void* pages);
 /* end custom functions */
 
 #endif
