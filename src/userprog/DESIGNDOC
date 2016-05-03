@@ -144,7 +144,7 @@ struct child_process {
 };
 - List element of the parent process' child list
 
-struct lock filesys_lock;
+struct lock file_lock;
 - The global filesystem lock, used for all file system sys calls
 
 struct file_descriptor {

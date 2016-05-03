@@ -10,6 +10,7 @@
 
 #include "threads/thread.h"
 
+
 /* A structure for holding process arguments, argv and argc in a page of
    contiguous memory. */
 struct args_struct
@@ -25,6 +26,8 @@ struct file_descriptor {
   struct file *file;
   struct list_elem elem;
 };
+
+
 
 struct mmap {
   struct spage *sp;

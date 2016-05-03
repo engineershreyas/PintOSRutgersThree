@@ -37,7 +37,7 @@ void unpin_buffer (void* buffer, unsigned size);
 void
 syscall_init (void)
 {
-  lock_init(&filesys_lock);
+  lock_init(&file_lock);
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
 
@@ -221,6 +221,7 @@ wait (pid_t pid)
 bool
 create(const char *file, unsigned initial_size)
 {
+
   if (not_valid(file))
     exit (-1);
 
@@ -228,11 +229,14 @@ create(const char *file, unsigned initial_size)
   bool result = filesys_create (file, initial_size);
   lock_release(&filesys_lock);
   return result;
+
+
 }
 
 bool
 remove (const char *file)
 {
+
   if (not_valid(file))
     exit (-1);
 
@@ -249,16 +253,19 @@ remove (const char *file)
     }
   lock_release(&filesys_lock);
   return result;
+
 }
 
 int
 open (const char *file)
 {
+
   if (not_valid(file))
     exit (-1);
 
   lock_acquire(&filesys_lock);
   struct file_descriptor *file_d = malloc(sizeof(struct file_descriptor));
+
   struct file *f = filesys_open(file);
   struct thread *cur = thread_current();
   if (f == NULL)
@@ -272,16 +279,19 @@ open (const char *file)
   list_push_back(&thread_current()->files,&file_d->elem);
   lock_release(&filesys_lock);
   return file_d->fd;
+
 }
 
 int
 filesize (int fd)
 {
+
   lock_acquire(&filesys_lock);
   struct file *file = get_file(fd);
   int result = file ? file_length(file) : -1;
   lock_release(&filesys_lock);
   return result;
+
 }
 
 int
@@ -300,6 +310,7 @@ read (int fd, void *buffer, unsigned size)
         }
       result = size;
     }
+
   else
     {
       struct file *file = get_file(fd);
@@ -307,6 +318,7 @@ read (int fd, void *buffer, unsigned size)
     }
   lock_release(&filesys_lock);
   return result;
+
 }
 
 int
@@ -321,6 +333,7 @@ write (int fd, const void *buffer, unsigned size)
       putbuf (buffer, size);
       result = size;
     }
+
   else
     {
       struct file *file = get_file(fd);
@@ -328,32 +341,38 @@ write (int fd, const void *buffer, unsigned size)
     }
   lock_release(&filesys_lock);
   return result;
+
 }
 
 void
 seek (int fd, unsigned position)
 {
+
   lock_acquire(&filesys_lock);
   struct file *file = get_file(fd);
   if (file == NULL)
     exit (-1);
   file_seek(file,position);
   lock_release(&filesys_lock);
+
 }
 
 unsigned
 tell (int fd)
 {
+
   lock_acquire(&filesys_lock);
   struct file *file = get_file(fd);
   int result = file ? file_tell(file) : 0;
   lock_release(&filesys_lock);
   return result;
+
 }
 
 void
 close (int fd)
 {
+
   lock_acquire(&filesys_lock);
   struct list_elem *e;
   struct file_descriptor *file_d;
@@ -373,6 +392,7 @@ close (int fd)
     }
   }
   lock_release(&filesys_lock);
+
 }
 
 
