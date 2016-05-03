@@ -434,62 +434,8 @@ struct spage* check_valid_ptr(const void *vaddr, void* esp)
   return sp;
 }
 
-struct child_process* add_child_process (int pid)
-{
-  struct child_process* cp = malloc(sizeof(struct child_process));
-  if (!cp)
-    {
-      return NULL;
-    }
-  cp->pid = pid;
-  cp->load = NOT_LOADED;
-  cp->wait = false;
-  cp->exit = false;
-  sema_init(&cp->load_sema, 0);
-  sema_init(&cp->exit_sema, 0);
-  list_push_back(&thread_current()->children,
-		 &cp->elem);
-  return cp;
-}
 
-struct child_process* get_child_process (int pid)
-{
-  struct thread *t = thread_current();
-  struct list_elem *e;
 
-  for (e = list_begin (&t->children); e != list_end (&t->children);
-       e = list_next (e))
-        {
-          struct child_process *cp = list_entry (e, struct child_process, elem);
-          if (pid == cp->pid)
-	    {
-	      return cp;
-	    }
-        }
-  return NULL;
-}
-
-void remove_child_process (struct child_process *cp)
-{
-  list_remove(&cp->elem);
-  free(cp);
-}
-
-void remove_child_processes (void)
-{
-  struct thread *t = thread_current();
-  struct list_elem *next, *e = list_begin(&t->children);
-
-  while (e != list_end (&t->children))
-    {
-      next = list_next(e);
-      struct child_process *cp = list_entry (e, struct child_process,
-					     elem);
-      list_remove(&cp->elem);
-      free(cp);
-      e = next;
-    }
-}
 
 void get_arg (struct intr_frame *f, int *arg, int n)
 {

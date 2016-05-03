@@ -522,7 +522,6 @@ init_thread (struct thread *t, const char *name, int priority)
   t->mapid = 0;
 
   list_init(&t->children);
-  t->cp = NULL;
   t->parent = -1;
 }
 
