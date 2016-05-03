@@ -13,7 +13,7 @@
 #define USER_VADDR_BOTTOM ((void *) 0x08048000)
 #define STACK_HEURISTIC 32
 
-struct lock filesys_lock;
+struct lock file_lock;
 
 struct child_process {
   int pid;

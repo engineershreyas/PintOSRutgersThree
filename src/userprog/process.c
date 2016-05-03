@@ -103,7 +103,7 @@ start_process (void *args_)
   bool success = false;
   struct process *p;
 
-  spage_table_init(&thread_current()->supp_page_table);
+  spage_table_init(&thread_current()->spt);
 
   /* Initialize interrupt frame and load executable. */
   memset (&if_, 0, sizeof if_);
@@ -185,7 +185,7 @@ process_exit (void)
     }
 
     process_remove_mmap(CLOSE_ALL);
-    spage_table_destroy(&cur->supp_page_table);
+    spage_table_destroy(&cur->spt);
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
@@ -663,7 +663,7 @@ bool process_add_mmap (struct spage *sp){
   if(!mm) return false;
 
   mm->sp = sp;
-  mm->id = thread_current()->mapid;
+  mm->mapid = thread_current()->mapid;
   list_push_back(&thread_current()->mmap_list, &mm->elem);
   return true;
 }
@@ -677,7 +677,7 @@ void process_remove_mmap (int mapping){
   while (e != list_end(&t->mmap_list)){
     next = list_next(e);
     struct mmap *mm = list_entry(e, struct mmap, elem);
-    if(mm->id = mapping || mapping == CLOSE_ALL){
+    if(mm->mapid = mapping || mapping == CLOSE_ALL){
       mm->sp->sticky = true;
       if(mm->sp->valid_access){
         if(pagedir_is_dirty(t->pagedir, mm->sp->data_to_fetch)){
@@ -689,16 +689,16 @@ void process_remove_mmap (int mapping){
         free_frame((pagedir_get_page(t->pagedir,mm->sp->data_to_fetch)));
         pagedir_clear_page(t->pagedir,mm->sp->data_to_fetch);
       }
-      if(mm->sp->type != HASH_ERROR) hash_delete(&t->supp_page_table,&mm->sp->h_elem);
+      if(mm->sp->type != HASH_ERROR) hash_delete(&t->spt,&mm->sp->elem);
 
       list_remove(&mm->elem);
-      if(mm->id != close){
+      if(mm->mapid != close){
         if(f){
           lock_acquire(&file_lock);
           file_close(f);
           lock_release(&file_lock);
         }
-        close = mm->id;
+        close = mm->mapid;
         f = mm->sp->file;
       }
       free(mm->sp);

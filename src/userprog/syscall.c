@@ -32,7 +32,7 @@ void unpin_buffer (void* buffer, unsigned size);
 void
 syscall_init (void) 
 {
-  lock_init(&filesys_lock);
+  lock_init(&file_lock);
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
 
@@ -231,45 +231,45 @@ int wait (pid_t pid)
 
 bool create (const char *file, unsigned initial_size)
 {
-  lock_acquire(&filesys_lock);
+  lock_acquire(&file_lock);
   bool success = filesys_create(file, initial_size);
-  lock_release(&filesys_lock);
+  lock_release(&file_lock);
   return success;
 }
 
 bool remove (const char *file)
 {
-  lock_acquire(&filesys_lock);
+  lock_acquire(&file_lock);
   bool success = filesys_remove(file);
-  lock_release(&filesys_lock);
+  lock_release(&file_lock);
   return success;
 }
 
 int open (const char *file)
 {
-  lock_acquire(&filesys_lock);
+  lock_acquire(&file_lock);
   struct file *f = filesys_open(file);
   if (!f)
     {
-      lock_release(&filesys_lock);
+      lock_release(&file_lock);
       return ERROR;
     }
   int fd = process_add_file(f);
-  lock_release(&filesys_lock);
+  lock_release(&file_lock);
   return fd;
 }
 
 int filesize (int fd)
 {
-  lock_acquire(&filesys_lock);
+  lock_acquire(&file_lock);
   struct file *f = process_get_file(fd);
   if (!f)
     {
-      lock_release(&filesys_lock);
+      lock_release(&file_lock);
       return ERROR;
     }
   int size = file_length(f);
-  lock_release(&filesys_lock);
+  lock_release(&file_lock);
   return size;
 }
 
@@ -285,15 +285,15 @@ int read (int fd, void *buffer, unsigned size)
 	}
       return size;
     }
-  lock_acquire(&filesys_lock);
+  lock_acquire(&file_lock);
   struct file *f = process_get_file(fd);
   if (!f)
     {
-      lock_release(&filesys_lock);
+      lock_release(&file_lock);
       return ERROR;
     }
   int bytes = file_read(f, buffer, size);
-  lock_release(&filesys_lock);
+  lock_release(&file_lock);
   return bytes;
 }
 
@@ -304,50 +304,50 @@ int write (int fd, const void *buffer, unsigned size)
       putbuf(buffer, size);
       return size;
     }
-  lock_acquire(&filesys_lock);
+  lock_acquire(&file_lock);
   struct file *f = process_get_file(fd);
   if (!f)
     {
-      lock_release(&filesys_lock);
+      lock_release(&file_lock);
       return ERROR;
     }
   int bytes = file_write(f, buffer, size);
-  lock_release(&filesys_lock);
+  lock_release(&file_lock);
   return bytes;
 }
 
 void seek (int fd, unsigned position)
 {
-  lock_acquire(&filesys_lock);
+  lock_acquire(&file_lock);
   struct file *f = process_get_file(fd);
   if (!f)
     {
-      lock_release(&filesys_lock);
+      lock_release(&file_lock);
       return;
     }
   file_seek(f, position);
-  lock_release(&filesys_lock);
+  lock_release(&file_lock);
 }
 
 unsigned tell (int fd)
 {
-  lock_acquire(&filesys_lock);
+  lock_acquire(&file_lock);
   struct file *f = process_get_file(fd);
   if (!f)
     {
-      lock_release(&filesys_lock);
+      lock_release(&file_lock);
       return ERROR;
     }
   off_t offset = file_tell(f);
-  lock_release(&filesys_lock);
+  lock_release(&file_lock);
   return offset;
 }
 
 void close (int fd)
 {
-  lock_acquire(&filesys_lock);
+  lock_acquire(&file_lock);
   process_close_file(fd);
-  lock_release(&filesys_lock);
+  lock_release(&file_lock);
 }
 
 void check_write_permission (struct spage *sp)
