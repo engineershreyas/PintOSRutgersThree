@@ -51,14 +51,14 @@ syscall_handler (struct intr_frame *f UNUSED)
     {
     case SYS_HALT:
       {
-	halt();
-	break;
+				halt();
+				break;
       }
     case SYS_EXIT:
       {
-	get_arg(f, &ARG0, 1);
-	exit(ARG0);
-	break;
+				get_arg(f, &ARG0, 1);
+				exit(ARG0);
+				break;
       }
     case SYS_EXEC:
       {
