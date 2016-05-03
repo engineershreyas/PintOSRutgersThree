@@ -33,11 +33,12 @@ void check_write_permission (struct spage *sp);
 void unpin_ptr (void* vaddr);
 void unpin_string (void* str);
 void unpin_buffer (void* buffer, unsigned size);
+bool not_valid(const void *pointer);
 
 void
 syscall_init (void)
 {
-  lock_init(&file_lock);
+  lock_init(&filesys_lock);
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
 
