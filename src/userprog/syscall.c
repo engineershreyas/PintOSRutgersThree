@@ -339,7 +339,7 @@ void is_write_permission(struct spage *sp){
 }
 
 struct spage* not_valid_two(const void *vaddr, void *esp){
-  if(!is_user_vaddr(vaddr) || vaddr < USER_VADDR_BOTTOM) exit(ERROR);
+  if(!is_user_vaddr(vaddr) || vaddr < VADDR_BOTTOM) exit(ERROR);
 
   bool load = false;
   struct spage *sp = get_sp((void *) vaddr);
@@ -382,7 +382,7 @@ void is_buffer_good(void* buffer, unsigned size, void* esp, bool to_write){
 
 int mmap(int fd, void *addr){
   struct file *old_f = get_file(fd);
-  if(!old_f || !is_user_vaddr(addr) || addr < USER_VADDR_BOTTOM || ((uint32_t) addr % PGSIZE) != 0) return ERROR;
+  if(!old_f || !is_user_vaddr(addr) || addr < VADDR_BOTTOM || ((uint32_t) addr % PGSIZE) != 0) return ERROR;
 
   struct file *file = file_reopen(old_f);
   if(!file || file_length(old_f) == 0) return ERROR;
