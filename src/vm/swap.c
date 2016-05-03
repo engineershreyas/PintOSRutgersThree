@@ -22,8 +22,8 @@ size_t swap_out (void *frame){
 
   if(free_ind == BITMAP_ERROR) PANIC("Swap partition is full");
 
-
-  for(size_t i = 0; i < SECS_PER_PAGE; i++) block_write(swap_block, free_ind * SECS_PER_PAGE + i, (uint8_t *) frame + i * BLOCK_SECTOR_SIZE);
+  size_t i;
+  for(i = 0; i < SECS_PER_PAGE; i++) block_write(swap_block, free_ind * SECS_PER_PAGE + i, (uint8_t *) frame + i * BLOCK_SECTOR_SIZE);
 
 
   lock_release(&swap_access);
@@ -39,8 +39,8 @@ void swap_in (size_t used_index, void *frame){
 
   bitmap_flip(swap_map, used_index);
 
-
-  for(size_t i = 0; i < SECS_PER_PAGE; i++) block_read(swap_block, used_index * SECS_PER_PAGE + i, (uint8_t) frame + i * BLOCK_SECTOR_SIZE);
+  size_t i;
+  for(i = 0; i < SECS_PER_PAGE; i++) block_read(swap_block, used_index * SECS_PER_PAGE + i, (uint8_t) frame + i * BLOCK_SECTOR_SIZE);
 
 
   lock_release(&swap_access);
