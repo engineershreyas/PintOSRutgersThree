@@ -21,7 +21,6 @@ enum thread_status
 /* Thread identifier type.
    You can redefine this to whatever type you like. */
 typedef int tid_t;
-typedef int pid_t;
 #define TID_ERROR ((tid_t) -1)          /* Error value for tid_t. */
 #define PID_ERROR ((pid_t) -1)
 
@@ -141,7 +140,7 @@ struct thread
 
     // Needed for wait / exec sys calls
     tid_t parent;
-    
+
 
     // Needed for denying writes to executables
     struct file* executable;
