@@ -24,14 +24,16 @@
 
 static void syscall_handler (struct intr_frame *);
 
-void get_arg(struct intr_frame *f, int *arg, int n);
+void store_argument(struct intr_frame *f, int *arg, int n);
 
-struct spage* check_valid_ptr(const void *vaddr, void* esp);
-void check_valid_buffer (void *buffer, unsigned size, void* esp, bool to_write);
-void check_valid_string(const void* str, void* esp);
-void check_write_permission(struct spage *sp);
+struct spage* not_valid_two(const void *vaddr, void* esp);
+
+void is_buffer_good (void *buffer, unsigned size, void* esp, bool to_write);
+void is_string_good(const void* str, void* esp);
+void is_write_permission(struct spage *sp);
 
 void unpin_ptr (void* vaddr);
+
 void unpin_string (void* str);
 void unpin_buffer(void *buffer, unsigned size);
 
@@ -251,77 +253,77 @@ static void
 syscall_handler (struct intr_frame *f UNUSED)
 {
   uint32_t *esp = f->esp;
-  check_valid_ptr((const void*)f->esp, f->esp);
+  not_valid_two((const void*)f->esp, f->esp);
   switch (*esp)
     {
       case SYS_HALT:
         halt ();
         break;
       case SYS_EXIT:
-        get_arg(f, &ARG0, 1);
+        store_argument(f, &ARG0, 1);
         exit ((int) ARG0);
         break;
       case SYS_EXEC:
-        get_arg(f, &ARG0,1);
-        check_valid_string((const void *) ARG0, f->esp);
+        store_argument(f, &ARG0,1);
+        is_string_good((const void *) ARG0, f->esp);
         f->eax = exec ((const char *) ARG0);
         unpin_string((void *) ARG0);
         break;
       case SYS_WAIT:
-        get_arg(f, &ARG0, 1);
+        store_argument(f, &ARG0, 1);
         f->eax = wait ((pid_t) ARG0);
         break;
       case SYS_CREATE:
-        get_arg(f, &ARG0, 2);
-        check_valid_string((const void *)ARG0, f->esp);
+        store_argument(f, &ARG0, 2);
+        is_string_good((const void *)ARG0, f->esp);
         f->eax = create ((const char *) ARG0, (unsigned) ARG1);
         unpin_string((void *)ARG0);
         break;
       case SYS_REMOVE:
-        get_arg(f, &ARG0, 1);
-        check_valid_string((const void *)ARG0, f->esp);
+        store_argument(f, &ARG0, 1);
+        is_string_good((const void *)ARG0, f->esp);
         f->eax = remove ((const char *) ARG0);
         break;
       case SYS_OPEN:
-        get_arg(f, &ARG0, 1);
-        check_valid_string((const void *) ARG0, f->esp);
+        store_argument(f, &ARG0, 1);
+        is_string_good((const void *) ARG0, f->esp);
         f->eax = open ((const char *) ARG0);
         unpin_string((void *) ARG0);
         break;
       case SYS_FILESIZE:
-        get_arg(f, &ARG0, 1);
+        store_argument(f, &ARG0, 1);
         f->eax = filesize ((int) ARG0);
         break;
       case SYS_READ:
-        get_arg(f, &ARG0,3);
-        check_valid_buffer((void *) ARG1, (unsigned) ARG2, f->esp, true);
+        store_argument(f, &ARG0,3);
+        is_buffer_good((void *) ARG1, (unsigned) ARG2, f->esp, true);
         f->eax = read ((int) ARG0, (void *) ARG1, (unsigned) ARG2);
         unpin_buffer((void *) ARG1, (unsigned) ARG2);
         break;
       case SYS_WRITE:
-        get_arg(f, &ARG0, 3);
-        check_valid_buffer((void *) ARG1, (unsigned) ARG2, f->esp, false);
+        store_argument(f, &ARG0, 3);
+        is_buffer_good((void *) ARG1, (unsigned) ARG2, f->esp, false);
         f->eax = write ((int) ARG0, (void *) ARG1, (unsigned) ARG2);
         unpin_buffer((void *) ARG1, (unsigned) ARG2);
         break;
       case SYS_SEEK:
-        get_arg(f, &ARG0, 2);
+        store_argument(f, &ARG0, 2);
         seek ((int) ARG0, (unsigned) ARG1);
         break;
       case SYS_TELL:
-        get_arg(f, &ARG0, 1);
+        store_argument(f, &ARG0, 1);
         f->eax = tell ((int) ARG0);
         break;
       case SYS_CLOSE:
-        get_arg(f, &ARG0, 1);
+        store_argument(f, &ARG0, 1);
         close ((int) ARG0);
         break;
       case SYS_MMAP:
-        get_arg(f, &ARG0, 2);
+        store_argument(f, &ARG0, 2);
         f->eax = mmap(ARG0, (void *) ARG1);
         break;
       case SYS_MUNMAP:
-        get_arg(f, &ARG0, 1);
+        store_argument(f, &ARG0, 1);
         munmap(&ARG0);
         break;
       default:
@@ -332,11 +334,11 @@ syscall_handler (struct intr_frame *f UNUSED)
     unpin_ptr(f->esp);
 }
 
-void check_write_permission(struct spage *sp){
+void is_write_permission(struct spage *sp){
   if(sp->read_only) exit(ERROR);
 }
 
-struct spage* check_valid_ptr(const void *vaddr, void *esp){
+struct spage* not_valid_two(const void *vaddr, void *esp){
   if(!is_user_vaddr(vaddr) || vaddr < USER_VADDR_BOTTOM) exit(ERROR);
 
   bool load = false;
@@ -346,28 +348,28 @@ struct spage* check_valid_ptr(const void *vaddr, void *esp){
     page_load(sp);
     load = sp->valid_access;
   }
-  else if(vaddr >= esp - STACK_HEURISTIC) load = stack_grow((void *) vaddr);
+  else if(vaddr >= esp - STACK_SIZE) load = stack_grow((void *) vaddr);
 
   if(!load) exit(ERROR);
 
   return sp;
 }
 
-void get_arg(struct intr_frame *f, int *arg, int n){
+void store_argument(struct intr_frame *f, int *arg, int n){
   int i;
   int *ptr;
   for(i = 0; i < n; i++){
     ptr = (int *) f->esp + i + 1;
-    check_valid_ptr((const void *) ptr, f->esp);
+    not_valid_two((const void *) ptr, f->esp);
     arg[i] = *ptr;
   }
 }
 
-void check_valid_buffer(void* buffer, unsigned size, void* esp, bool to_write){
+void is_buffer_good(void* buffer, unsigned size, void* esp, bool to_write){
   unsigned i;
   char* local_buffer = (char *) buffer;
   for(i = 0; i < size; i++){
-    struct spage *sp = check_valid_ptr((const void*)local_buffer, esp);
+    struct spage *sp = not_valid_two((const void*)local_buffer, esp);
 
     if(sp != NULL && to_write){
       if(sp->read_only) exit(ERROR);
@@ -407,14 +409,14 @@ int mmap(int fd, void *addr){
 }
 
 void munmap(int mapping){
-  process_remove_mmap(mapping);
+  remove_mmap_from_process(mapping);
 }
 
-void check_valid_string(const void* str, void* esp){
-  check_valid_ptr(str, esp);
+void is_string_good(const void* str, void* esp){
+  not_valid_two(str, esp);
   while (* (char *)str != 0){
     str = (char *) str + 1;
-    check_valid_ptr(str,esp);
+    not_valid_two(str,esp);
   }
 }
 

@@ -5,12 +5,16 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+//for global operations or error codes
 #define CLOSE_ALL -1
 #define ERROR -1
 
 
-#define USER_VADDR_BOTTOM ((void *) 0x08048000)
-#define STACK_HEURISTIC 32
+//macros
+#define STACK_SIZE 32
+#define VADDR_BOTTOM ((void *) 0x08048000)
+
+
 
 struct lock file_lock;
 

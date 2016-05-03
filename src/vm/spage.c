@@ -17,6 +17,7 @@
 #include "vm/spage.h"
 #include "vm/swap.h"
 
+//helper functions to help init or destroy supplemental page table
 static unsigned spage_hash (const struct hash_elem *e, void *aux UNUSED){
   struct spage *sp = hash_entry(e, struct spage, h_elem);
   return hash_int((int) sp->data_to_fetch);
@@ -42,6 +43,8 @@ static void spage_action (struct hash_elem *e, void *aux UNUSED){
 
 }
 
+//end helper funcs
+
 void spage_table_init (struct hash *spt){
   hash_init(spt, spage_hash, spage_check_less, NULL);
 }
@@ -50,6 +53,7 @@ void spage_table_destroy(struct hash *spt){
   hash_destroy(spt, spage_action);
 }
 
+//get a supplemental page entry
 struct spage* get_sp(void *addr){
   struct spage sp;
   sp.data_to_fetch = pg_round_down(addr);
@@ -60,6 +64,7 @@ struct spage* get_sp(void *addr){
   return hash_entry(e, struct spage, h_elem);
 }
 
+//load the page
 bool page_load (struct spage *sp){
   bool success = false;
   sp->sticky = true;
@@ -80,25 +85,7 @@ bool page_load (struct spage *sp){
   return success;
 }
 
-bool swap_load(struct spage *sp){
-  uint8_t *frame = allocate_frame(PAL_USER, sp);
-
-  if(frame == NULL) return false;
-
-  bool installed = install_page(sp->data_to_fetch, frame, !sp->read_only);
-
-  if(!installed){
-    free_frame(frame);
-    return false;
-  }
-
-  swap_in(sp->swap_mode, sp->data_to_fetch);
-  sp->valid_access = true;
-  return true;
-
-}
-
-
+//load the file
 bool file_load(struct spage *sp){
   enum palloc_flags flags = PAL_USER;
   if(sp->read_count == 0) flags |= PAL_ZERO;
@@ -131,6 +118,29 @@ bool file_load(struct spage *sp){
 
 }
 
+//load the swap
+bool swap_load(struct spage *sp){
+  uint8_t *frame = allocate_frame(PAL_USER, sp);
+
+  if(frame == NULL) return false;
+
+  bool installed = install_page(sp->data_to_fetch, frame, !sp->read_only);
+
+  if(!installed){
+    free_frame(frame);
+    return false;
+  }
+
+  swap_in(sp->swap_mode, sp->data_to_fetch);
+  sp->valid_access = true;
+  return true;
+
+}
+
+
+
+
+//add a file to the page table
 bool add_file_to_table (struct file *file, int32_t offset, uint8_t *upage, uint32_t read_count, uint32_t zero_count, bool can_write){
   struct spage *sp = malloc(sizeof(struct spage));
   if(sp == NULL) return false;
@@ -164,7 +174,7 @@ bool add_mmap_to_table (struct file *file, int32_t offset, uint8_t *upage, uint3
   sp->read_only = false;
   sp->sticky = false;
 
-  if(!process_add_mmap(sp)){
+  if(!add_mmap_to_process(sp)){
     free(sp);
     return false;
   }
@@ -179,6 +189,7 @@ bool add_mmap_to_table (struct file *file, int32_t offset, uint8_t *upage, uint3
 
 }
 
+//implementing stack growth
 bool stack_grow(void *data_to_fetch){
   if((size_t) (PHYS_BASE - pg_round_down(data_to_fetch) > STACK_MAX)) return false;
 

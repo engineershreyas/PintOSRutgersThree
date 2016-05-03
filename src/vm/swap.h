@@ -20,7 +20,7 @@ struct block *swap_block;
 
 struct bitmap *swap_map;
 
-void swap_init (void);
+void init_swap (void);
 size_t swap_out (void *frame);
 void swap_in (size_t used_index, void *frame);
 

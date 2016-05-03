@@ -1,6 +1,6 @@
 #include "vm/swap.h"
 
-void swap_init (void){
+void init_swap (void){
   swap_block = block_get_role(BLOCK_SWAP);
   if(swap_block == NULL) return;
 
@@ -14,7 +14,7 @@ void swap_init (void){
 
 
 size_t swap_out (void *frame){
-  if(!swap_block || !swap_map) PANIC("Swap partition needed but not present");
+  if(swap_block == NULL || !swap_map == NULL) PANIC("Swap partition needed but not present");
 
   lock_acquire(&swap_access);
 
@@ -22,10 +22,9 @@ size_t swap_out (void *frame){
 
   if(free_ind == BITMAP_ERROR) PANIC("Swap partition is full");
 
-  size_t i;
-  for(i = 0; i < SECS_PER_PAGE; i++){
-    block_write(swap_block, free_ind * SECS_PER_PAGE + i, (uint8_t *) frame + i * BLOCK_SECTOR_SIZE);
-  }
+
+  for(size_t i = 0; i < SECS_PER_PAGE; i++) block_write(swap_block, free_ind * SECS_PER_PAGE + i, (uint8_t *) frame + i * BLOCK_SECTOR_SIZE);
+
 
   lock_release(&swap_access);
   return free_ind;
@@ -33,17 +32,16 @@ size_t swap_out (void *frame){
 }
 
 void swap_in (size_t used_index, void *frame){
-  if(!swap_block || !swap_map) return
+  if(swap_block == NULL || swap_map == NULL) return
 
   lock_acquire(&swap_access);
   if(bitmap_test(swap_map, used_index) == SWAP_FREE) PANIC("Trying to swap in free block");
 
   bitmap_flip(swap_map, used_index);
 
-  size_t i;
-  for(i = 0; i < SECS_PER_PAGE; i++){
-    block_read(swap_block, used_index * SECS_PER_PAGE + i, (uint8_t) frame + i * BLOCK_SECTOR_SIZE);
-  }
+
+  for(size_t i = 0; i < SECS_PER_PAGE; i++) block_read(swap_block, used_index * SECS_PER_PAGE + i, (uint8_t) frame + i * BLOCK_SECTOR_SIZE);
+
 
   lock_release(&swap_access);
 

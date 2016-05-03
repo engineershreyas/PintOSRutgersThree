@@ -185,7 +185,7 @@ process_exit (void)
       free (file_d);
     }
 
-    process_remove_mmap(CLOSE_ALL);
+    remove_mmap_from_process(CLOSE_ALL);
     spage_table_destroy(&cur->supp_page_table);
 
   /* Destroy the current process's page directory and switch back
@@ -663,7 +663,7 @@ install_page (void *upage, void *kpage, bool writable)
           && pagedir_set_page (t->pagedir, upage, kpage, writable));
 }
 
-bool process_add_mmap (struct spage *sp){
+bool add_mmap_to_process (struct spage *sp){
   struct mmap *mm = malloc(sizeof(struct mmap));
   if(!mm) return false;
 
@@ -673,7 +673,7 @@ bool process_add_mmap (struct spage *sp){
   return true;
 }
 
-void process_remove_mmap (int mapping){
+void remove_mmap_from_process (int mapping){
   struct thread *t = thread_current();
   struct list_elem *next,*e = list_begin(&t->mmap_list);
   struct file *f = NULL;
@@ -698,7 +698,7 @@ void process_remove_mmap (int mapping){
 
       list_remove(&mm->elem);
       if(mm->id != close){
-        if(f){
+        if(f != NULL){
           lock_acquire(&file_lock);
           file_close(f);
           lock_release(&file_lock);
@@ -711,7 +711,9 @@ void process_remove_mmap (int mapping){
     }
     e = next;
   }
-  if(f){
+
+  //if there is a last file
+  if(f != NULL){
     lock_acquire(&file_lock);
     file_close(f);
     lock_release(&file_lock);

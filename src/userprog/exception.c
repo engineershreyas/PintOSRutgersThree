@@ -159,7 +159,7 @@ page_fault (struct intr_frame *f)
       load = page_load(sp);
       sp->sticky = false;
     }
-    else if(fault_addr >= f->esp - STACK_HEURISTIC) load = stack_grow(fault_addr);
+    else if(fault_addr >= f->esp - STACK_SIZE) load = stack_grow(fault_addr);
   }
 
   if(!load){
