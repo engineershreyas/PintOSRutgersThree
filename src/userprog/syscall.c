@@ -35,6 +35,20 @@ void unpin_string (void* str);
 void unpin_buffer (void* buffer, unsigned size);
 bool not_valid(const void *pointer);
 
+struct file *get_file(int fd)
+{
+  struct list_elem *e;
+  struct file_descriptor *file_d;
+  struct thread *cur = thread_current();
+  for (e = list_tail (&cur->files); e != list_head (&cur->files); e = list_prev (e))
+    {
+      file_d = list_entry (e, struct file_descriptor, elem);
+      if (file_d->fd == fd)
+        return file_d->file;
+    }
+  return NULL;
+}
+
 void
 syscall_init (void)
 {
@@ -46,7 +60,7 @@ static void
 syscall_handler (struct intr_frame *f UNUSED)
 {
 
-	uint32_t *esp = f->esp;
+	uint32_t *esp = f->esps
   check_valid_ptr((const void*) f->esp, f->esp);
   switch (* (int *) f->esp)
     {

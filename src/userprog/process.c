@@ -34,6 +34,23 @@ static bool push_args_to_stack (struct args_struct *args, void **esp);
 static bool push_byte_to_stack (uint8_t val, void **esp);
 static bool push_word_to_stack (uint32_t val, void **esp);
 
+struct process *get_child (pid_t pid);
+
+/* Returns child of current thread with given PID or NULL If non exists. */
+struct process *get_child (pid_t pid)
+{
+  struct list_elem *e;
+  struct process *child;
+  struct thread *cur = thread_current ();
+  for (e = list_tail (&cur->children); e != list_head (&cur->children); e = list_prev (e))
+    {
+      child = list_entry (e, struct process, elem);
+      if (child->pid == pid)
+        return child;
+    }
+  return NULL;
+}
+
 
 
 
