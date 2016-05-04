@@ -101,5 +101,6 @@ void* evict_frame(enum palloc_flags flags){
     if(e == list_end(&frame_table)) e = list_begin(&frame_table);
 
   }
+  lock_release(&frame_table_access);
 
 }
